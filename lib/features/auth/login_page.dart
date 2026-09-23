@@ -1,4 +1,4 @@
-import 'package:bookcase/shared/widgets/text_field.dart';
+import 'package:bookcase/shared/widgets/text_field/text_field_default.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatelessWidget {

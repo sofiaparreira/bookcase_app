@@ -1,5 +1,5 @@
 import 'package:bookcase/core/theme/app_colors.dart';
-import 'package:bookcase/shared/widgets/button_default.dart';
+import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:flutter/material.dart';
 
 enum BadgeVariant {

@@ -15,7 +15,7 @@ class TitleH1 extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(text, style: TextStyle(
       fontSize: 24,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
       color: color ?? AppColors.textPrimary
     ));
   }

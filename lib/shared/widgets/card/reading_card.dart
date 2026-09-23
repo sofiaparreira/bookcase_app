@@ -1,11 +1,30 @@
 import 'package:bookcase/core/theme/app_colors.dart';
+import 'package:bookcase/core/theme/app_decorations.dart';
+import 'package:bookcase/core/theme/app_shadow.dart';
 import 'package:bookcase/shared/widgets/badge_default.dart';
-import 'package:bookcase/shared/widgets/button_default.dart';
+import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/title_card.dart';
 import 'package:flutter/material.dart';
 
 class ReadingCard extends StatefulWidget {
-  const ReadingCard({super.key});
+
+  final String title;
+  final String author;
+  final int currentPage;
+  final int numPages;
+  final double progress;
+  final int progressPercent;
+
+  const ReadingCard({
+    super.key,
+    required this.title,
+    required this.author,
+    required this.currentPage,
+    required this.numPages,
+    required this.progress,
+    required this.progressPercent
+    });
+
 
   @override
   State<ReadingCard> createState() => _ReadingCardState();
@@ -16,21 +35,8 @@ class _ReadingCardState extends State<ReadingCard> {
   Widget build(BuildContext context) {
     return Container(
       width: 380,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            spreadRadius: 2,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Card(
-        color: Colors.white,
-        elevation: 0,
+      decoration: AppDecorations.card,
+      
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -46,7 +52,7 @@ class _ReadingCardState extends State<ReadingCard> {
                   children: [
                     BadgeDefault(text: 'Teste'),
 
-                    TitleCard(text: 'O nome do vento'),
+                    TitleCard(text: widget.title),
 
                     const Text('Patric Roufhfuss'),
                     
@@ -55,21 +61,21 @@ class _ReadingCardState extends State<ReadingCard> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Pág. 100 de 340',
+                        Text(
+                          'Pág. ${widget.currentPage} de ${widget.numPages}',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.secondary,
                           ),
                         ),
-                        const Text('32%', style: TextStyle(fontSize: 12)),
+                        Text('${widget.progressPercent}%', style: TextStyle(fontSize: 12)),
                       ],
                     ),
 
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: LinearProgressIndicator(
-                        value: 0.45,
+                        value: widget.progress,
                         minHeight: 10,
                         backgroundColor: Colors.grey.shade200,
                         color: AppColors.primary,
@@ -87,7 +93,7 @@ class _ReadingCardState extends State<ReadingCard> {
               ),
             ],
           ),
-        ),
+        
       ),
     );
   }

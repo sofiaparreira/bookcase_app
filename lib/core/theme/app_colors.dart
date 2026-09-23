@@ -16,4 +16,7 @@ class AppColors {
   static const textTertiary = Color(0xFF9A9A9A);
 
   static const primary10 = Color(0x1A6F1641);
+  static const white10 = Color.fromARGB(26, 255, 255, 255);
+  static const white15 = Color.fromARGB(38, 255, 255, 255);
+  static const white20 = Color.fromARGB(51, 255, 255, 255);
 }
