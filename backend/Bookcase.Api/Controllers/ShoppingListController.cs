@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Bookcase.Api.Data;
 using Bookcase.Api.Models;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Bookcase.Api.Controllers;
 
@@ -11,6 +12,13 @@ namespace Bookcase.Api.Controllers;
 [Authorize]
 public class ShoppingListController : ControllerBase
 {
+    // Método auxiliar para obter o ID do usuário autenticado
+    private int GetUserId()
+    {
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return int.Parse(id!);
+    }
+
     // Injeção de dependência 
     private readonly AppDbContext _context;
 
@@ -23,7 +31,10 @@ public class ShoppingListController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var itens = await _context.ShoppingListItems.ToListAsync();
+        var userId = GetUserId();
+        var itens = await _context.ShoppingListItems
+            .Where(i => i.UserId == userId) // Filtra os itens da lista de compras pelo ID do usuário autenticado
+            .ToListAsync();
         return Ok(itens);
     }
 
@@ -31,6 +42,9 @@ public class ShoppingListController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(ShoppingListItem item)
     {
+        var userId = GetUserId();
+        item.UserId = userId;
+
         _context.ShoppingListItems.Add(item);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
@@ -42,7 +56,7 @@ public class ShoppingListController : ControllerBase
     {
         var item = await _context.ShoppingListItems.FindAsync(id);
 
-        if (item == null) return NotFound();
+        if (item == null || item.UserId != GetUserId()) return NotFound();
 
         return Ok(item);
     }
@@ -54,7 +68,7 @@ public class ShoppingListController : ControllerBase
         if (id != item.Id) return BadRequest();
 
         var existingItem = await _context.ShoppingListItems.FindAsync(id);
-        if (existingItem == null) return NotFound();
+        if (existingItem == null || existingItem.UserId != GetUserId()) return NotFound();
 
         existingItem.Title = item.Title;
         existingItem.Author = item.Author;
@@ -71,7 +85,7 @@ public class ShoppingListController : ControllerBase
     {
         var item = await _context.ShoppingListItems.FindAsync(id);
 
-        if (item == null) return NotFound();
+        if (item == null || item.UserId != GetUserId()) return NotFound();
 
         _context.ShoppingListItems.Remove(item);
         await _context.SaveChangesAsync();

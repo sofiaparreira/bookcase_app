@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Bookcase.Api.Data;
 using Bookcase.Api.Models;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Bookcase.Api.Controllers;
 
@@ -11,6 +12,13 @@ namespace Bookcase.Api.Controllers;
 [Authorize]
 public class BookController : ControllerBase
 {
+    // Método auxiliar para obter o ID do usuário autenticado
+    private int GetUserId()
+    {
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return int.Parse(id!);
+    }
+
     // Injeção de dependência 
     private readonly AppDbContext _context;
 
@@ -23,7 +31,10 @@ public class BookController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var books = await _context.Books.ToListAsync();
+        var userId = GetUserId();
+        var books = await _context.Books
+        .Where(book => book.UserId == userId) // Filtra os livros pelo ID do usuário autenticado
+        .ToListAsync();
         return Ok(books);
     }
 
@@ -31,6 +42,9 @@ public class BookController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(Book book)
     {
+        var userId = GetUserId();
+        book.UserId = userId;
+
         _context.Books.Add(book);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = book.Id }, book);
@@ -42,7 +56,7 @@ public class BookController : ControllerBase
     {
         var book = await _context.Books.FindAsync(id);
 
-        if (book == null) return NotFound();
+        if (book == null || book.UserId != GetUserId()) return NotFound();
 
         return Ok(book);
     }
@@ -54,7 +68,7 @@ public class BookController : ControllerBase
         if (id != book.Id) return BadRequest();
 
         var existingBook = await _context.Books.FindAsync(id);
-        if (existingBook == null) return NotFound();
+        if (existingBook == null || existingBook.UserId != GetUserId()) return NotFound();
 
         existingBook.Title = book.Title;
         existingBook.Author = book.Author;
@@ -72,7 +86,7 @@ public class BookController : ControllerBase
     {
         var book = await _context.Books.FindAsync(id);
 
-        if (book == null) return NotFound();
+        if (book == null || book.UserId != GetUserId()) return NotFound();
 
         _context.Books.Remove(book);
         await _context.SaveChangesAsync();
