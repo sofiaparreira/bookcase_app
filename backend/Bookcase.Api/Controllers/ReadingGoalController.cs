@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Bookcase.Api.Data;
 using Bookcase.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Bookcase.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ReadingGoalController : ControllerBase
 {
     // Injeção de dependência 
