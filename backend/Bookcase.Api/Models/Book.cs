@@ -4,7 +4,7 @@ public class Book
 {
     public int Id { get; set; }
     public int UserId { get; set; }
-    public User User { get; set; } = null!;
+    public User? User { get; set; }
     public required String Title { get; set; }
     public  String? Author { get; set; }
     public String? Description { get; set; }
