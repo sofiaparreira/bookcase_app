@@ -3,6 +3,7 @@ import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/card/metric_card.dart';
 import 'package:bookcase/shared/widgets/card/reading_card.dart';
+import 'package:bookcase/shared/widgets/modal/update_reading_progress_modal.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
 import 'package:bookcase/shared/widgets/text/title_h2.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,7 @@ class DashboardPage extends StatelessWidget {
         author: 'Oscar Wilde',
         isbn: '123123',
         status: EnumBookStatus.reading,
-        numPages: 300,
+        totalPages: 300,
         image: 'https://darkside.vtexassets.com/arquivos/ids/176888/o-retrato-de-dorian-gray.png?v=637655004354600000',
       ),
       currentPage: 100,
@@ -31,7 +32,7 @@ class DashboardPage extends StatelessWidget {
         author: 'Oscar Wilde',
         isbn: '123123',
         status: EnumBookStatus.reading,
-        numPages: 300,
+        totalPages: 300,
         image: 'https://darkside.vtexassets.com/arquivos/ids/176888/o-retrato-de-dorian-gray.png?v=637655004354600000',
       ),
       currentPage: 100,
@@ -171,14 +172,22 @@ class DashboardPage extends StatelessWidget {
                     padding: const EdgeInsets.all(12),
                     child: Row(
                       spacing: 12,
-                      children: readingBooksList.map((book) {
+                      children: readingBooksList.map((readingBook) {
                         return ReadingCard(
-                          title: book.book.title,
-                          author: book.book.author,
-                          currentPage: book.currentPage,
-                          numPages: book.book.numPages,
-                          progress: book.progress,
-                          progressPercent: book.progressPercent,
+                          title: readingBook.book.title,
+                          author: readingBook.book.author,
+                          currentPage: readingBook.currentPage,
+                          totalPages: readingBook.book.totalPages,
+                          progress: readingBook.progress,
+                          progressPercent: readingBook.progressPercent,
+                          onUpdateProgress: () {
+                            showModalBottomSheet(context: context, isScrollControlled: true, builder: (context) {
+                              return UpdateReadingProgressModal(
+                                currentPage: readingBook.currentPage,
+                                totalPages: readingBook.book.totalPages,
+                              );
+                            });
+                          }
                         );
                       }).toList(),
                     ),
