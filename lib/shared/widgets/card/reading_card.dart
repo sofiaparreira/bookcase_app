@@ -11,18 +11,20 @@ class ReadingCard extends StatefulWidget {
   final String title;
   final String author;
   final int currentPage;
-  final int numPages;
+  final int totalPages;
   final double progress;
   final int progressPercent;
+  final VoidCallback onUpdateProgress;
 
   const ReadingCard({
     super.key,
     required this.title,
     required this.author,
     required this.currentPage,
-    required this.numPages,
+    required this.totalPages,
     required this.progress,
-    required this.progressPercent
+    required this.progressPercent,
+    required this.onUpdateProgress
     });
 
 
@@ -62,7 +64,7 @@ class _ReadingCardState extends State<ReadingCard> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Pág. ${widget.currentPage} de ${widget.numPages}',
+                          'Pág. ${widget.currentPage} de ${widget.totalPages}',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.secondary,
@@ -86,7 +88,7 @@ class _ReadingCardState extends State<ReadingCard> {
                       text: 'Atualizar progresso',
                       size: ButtonSize.sm,
                       width: ButtonWidth.fit,
-                      onPressed: () {},
+                      onPressed: widget.onUpdateProgress,
                     ),
                   ],
                 ),

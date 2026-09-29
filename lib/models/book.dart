@@ -5,7 +5,7 @@ class Book {
   final String author;
   final String isbn;
   final EnumBookStatus status;
-  final int numPages;
+  final int totalPages;
   final String image;
 
   const Book({
@@ -14,7 +14,7 @@ class Book {
     required this.author,
     required this.isbn,
     required this.status,
-    required this.numPages,
+    required this.totalPages,
     required this.image
   });
 }
@@ -36,7 +36,7 @@ class ReadingBook {
     required this.currentPage
   });
 
-  double get progress => currentPage / book.numPages;
+  double get progress => currentPage / book.totalPages;
   int get progressPercent => (progress * 100).toInt();
   
 }
