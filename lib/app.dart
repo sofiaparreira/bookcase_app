@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class App extends StatefulWidget {
-  const App({super.key});
+  final Widget? initialHome;
+
+  const App({super.key, this.initialHome});
 
   @override
   State<App> createState() => _AppState();
@@ -28,20 +30,21 @@ class _AppState extends State<App> {
       theme: ThemeData(
         textTheme: GoogleFonts.nunitoSansTextTheme(),
       ),
-      home: Scaffold(
-        body: IndexedStack(
-          index: currentIndex,
-          children: pages,
-        ),
-        bottomNavigationBar: AppBottomNavigation(
-          currentIndex: currentIndex,
-          onTap: (index) {
-            setState(() {
-              currentIndex = index;
-            });
-          },
-        ),
-      ),
+      home: widget.initialHome ??
+          Scaffold(
+            body: IndexedStack(
+              index: currentIndex,
+              children: pages,
+            ),
+            bottomNavigationBar: AppBottomNavigation(
+              currentIndex: currentIndex,
+              onTap: (index) {
+                setState(() {
+                  currentIndex = index;
+                });
+              },
+            ),
+          ),
     );
   }
 }

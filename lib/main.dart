@@ -1,4 +1,5 @@
 import 'package:bookcase/app.dart';
+import 'package:bookcase/features/auth/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -9,5 +10,10 @@ void main() async {
     anonKey:
         'sb_publishable_6T3UOH_lnm68SbAXsW7mxQ_3VLylpKi',
   );
-  runApp(const App());
+
+  final session = Supabase.instance.client.auth.currentSession;
+
+  runApp(App(
+    initialHome: session != null ? null : const LoginPage(),
+  ));
 }
