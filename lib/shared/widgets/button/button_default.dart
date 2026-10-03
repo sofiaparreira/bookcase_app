@@ -76,6 +76,12 @@ class ButtonDefault extends StatelessWidget {
             variant == ButtonVariant.transparent ? Colors.transparent : null,
           ),
 
+          padding: WidgetStateProperty.all(
+            EdgeInsets.symmetric(
+              horizontal: size == ButtonSize.sm ? 12 : 16,
+            ),
+          ),
+
           textStyle: WidgetStateProperty.all(
             Theme.of(context).textTheme.labelLarge,
           ),
@@ -83,7 +89,16 @@ class ButtonDefault extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           spacing: 8,
-          children: [?prefixIcon, Text(text), ?suffixIcon],
+          children: [
+            ?prefixIcon,
+            Flexible(
+              child: Text(
+                text,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            ?suffixIcon,
+          ],
         ),
       ),
     );
