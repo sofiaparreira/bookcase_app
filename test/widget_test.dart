@@ -12,7 +12,7 @@ void main() {
   testWidgets('app renders dashboard content', (WidgetTester tester) async {
     await tester.pumpWidget(const App());
 
-    expect(find.text('Olá, Usuário'), findsOneWidget);
-    expect(find.text('teste'), findsOneWidget);
+    expect(find.text('Olá'), findsOneWidget);
+    expect(find.text('Ana'), findsOneWidget);
   });
 }

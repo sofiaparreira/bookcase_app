@@ -7,7 +7,6 @@ import 'package:bookcase/shared/widgets/title_card.dart';
 import 'package:flutter/material.dart';
 
 class ReadingCard extends StatefulWidget {
-
   final String title;
   final String author;
   final int currentPage;
@@ -24,9 +23,8 @@ class ReadingCard extends StatefulWidget {
     required this.totalPages,
     required this.progress,
     required this.progressPercent,
-    required this.onUpdateProgress
-    });
-
+    required this.onUpdateProgress,
+  });
 
   @override
   State<ReadingCard> createState() => _ReadingCardState();
@@ -38,64 +36,66 @@ class _ReadingCardState extends State<ReadingCard> {
     return Container(
       width: 380,
       decoration: AppDecorations.card,
-      
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            spacing: 24,
-            children: [
-              // IMAGEM
-              const SizedBox(width: 100, child: Text('Imagem')),
 
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 4,
-                  children: [
-                    BadgeDefault(text: 'Teste'),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          spacing: 24,
+          children: [
+            // IMAGEM
+            const SizedBox(width: 100, child: Text('Imagem')),
 
-                    TitleCard(text: widget.title),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 4,
+                children: [
+                  BadgeDefault(text: 'Teste'),
 
-                    const Text('Patric Roufhfuss'),
-                    
-                    SizedBox(height: 8),
+                  TitleCard(text: widget.title),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Pág. ${widget.currentPage} de ${widget.totalPages}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.secondary,
-                          ),
+                  const Text('Patric Roufhfuss'),
+
+                  SizedBox(height: 8),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Pág. ${widget.currentPage} de ${widget.totalPages}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondary,
                         ),
-                        Text('${widget.progressPercent}%', style: TextStyle(fontSize: 12)),
-                      ],
-                    ),
-
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: widget.progress,
-                        minHeight: 10,
-                        backgroundColor: Colors.grey.shade200,
-                        color: AppColors.primary,
                       ),
+                      Text(
+                        '${widget.progressPercent}%',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: widget.progress,
+                      minHeight: 10,
+                      backgroundColor: Colors.grey.shade200,
+                      color: AppColors.primary,
                     ),
-                    SizedBox(height: 8),
-                    ButtonDefault(
-                      text: 'Atualizar progresso',
-                      size: ButtonSize.sm,
-                      width: ButtonWidth.fit,
-                      onPressed: widget.onUpdateProgress,
-                    ),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 8),
+                  ButtonDefault(
+                    text: 'Atualizar progresso',
+                    size: ButtonSize.sm,
+                    width: ButtonWidth.fit,
+                    onPressed: widget.onUpdateProgress,
+                  ),
+                ],
               ),
-            ],
-          ),
-        
+            ),
+          ],
+        ),
       ),
     );
   }

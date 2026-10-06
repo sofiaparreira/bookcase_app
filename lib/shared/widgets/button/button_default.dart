@@ -15,6 +15,7 @@ class ButtonDefault extends StatelessWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final ButtonSize size;
+  final bool isLoading;
 
   const ButtonDefault({
     super.key,
@@ -25,6 +26,7 @@ class ButtonDefault extends StatelessWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.size = ButtonSize.md,
+    this.isLoading = false,
   });
 
   @override
@@ -33,10 +35,10 @@ class ButtonDefault extends StatelessWidget {
       width: width == ButtonWidth.full ? double.infinity : null,
       height: switch (size) {
         ButtonSize.sm => 36,
-        ButtonSize.md => 44,
+        ButtonSize.md => 48,
       },
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
             if (variant == ButtonVariant.transparent &&
@@ -47,7 +49,7 @@ class ButtonDefault extends StatelessWidget {
             return switch (variant) {
               ButtonVariant.primary => AppColors.primary,
               ButtonVariant.transparent => Colors.transparent,
-              ButtonVariant.secondary => null,
+              ButtonVariant.secondary => Colors.white,
             };
           }),
 
@@ -65,26 +67,70 @@ class ButtonDefault extends StatelessWidget {
                 ? Colors.white
                 : variant == ButtonVariant.transparent
                 ? AppColors.primary
-                : null,
+                : AppColors.textPrimary,
           ),
 
           elevation: WidgetStateProperty.all(
-            variant == ButtonVariant.transparent ? 0 : null,
+            variant == ButtonVariant.transparent ||
+                    variant == ButtonVariant.secondary
+                ? 0
+                : null,
           ),
 
           shadowColor: WidgetStateProperty.all(
             variant == ButtonVariant.transparent ? Colors.transparent : null,
           ),
 
+          side: WidgetStateProperty.all(
+            variant == ButtonVariant.secondary
+                ? const BorderSide(color: AppColors.border, width: 1)
+                : BorderSide.none,
+          ),
+
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+
+          padding: WidgetStateProperty.all(
+            EdgeInsets.symmetric(
+              horizontal: size == ButtonSize.sm ? 12 : 20,
+            ),
+          ),
+
           textStyle: WidgetStateProperty.all(
-            Theme.of(context).textTheme.labelLarge,
+            Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: size == ButtonSize.sm ? 13 : 15,
+                ),
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 8,
-          children: [?prefixIcon, Text(text), ?suffixIcon],
-        ),
+        child: isLoading
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: variant == ButtonVariant.primary
+                      ? Colors.white
+                      : AppColors.primary,
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 8,
+                children: [
+                  ?prefixIcon,
+                  Flexible(
+                    child: Text(
+                      text,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  ?suffixIcon,
+                ],
+              ),
       ),
     );
   }
