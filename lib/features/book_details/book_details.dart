@@ -4,6 +4,7 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
+import 'package:bookcase/shared/widgets/modal/select_book_status_modal.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
 import 'package:bookcase/shared/widgets/text/title_h2.dart';
 import 'package:bookcase/shared/widgets/text/title_h3.dart';
@@ -24,6 +25,18 @@ class BookDetailsPage extends StatelessWidget {
     genre: 'Romance',
   );
 
+  Future<void> openBookStatusModal(BuildContext context) async {
+    final selectedStatus = await showModalBottomSheet<EnumBookStatus>(
+      context: context, 
+      isScrollControlled: true,
+      constraints: const BoxConstraints(
+        maxWidth: double.infinity
+      ),
+      builder: (context) => const SelectBookStatusModal()
+    );
+
+    if(selectedStatus != null) {}
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,7 +135,7 @@ class BookDetailsPage extends StatelessWidget {
                                 text: "Adicionar à estante",
                                 width: ButtonWidth.full,
                                 size: ButtonSize.md,
-                                onPressed: () {},
+                                onPressed: () => openBookStatusModal(context),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -208,7 +221,7 @@ class BookDetailsPage extends StatelessWidget {
                       text: 'Adicionar à estante',
                       width: ButtonWidth.full,
                       prefixIcon: const Icon(LucideIcons.plus, size: 19),
-                      onPressed: () {},
+                      onPressed: () => openBookStatusModal(context)
                     ),
                   ],
                 ),
