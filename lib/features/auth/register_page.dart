@@ -47,9 +47,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Conta criada com sucesso! Faça login para continuar.',
-          ),
+          content: Text('Conta criada com sucesso! Faça login para continuar.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -95,13 +93,13 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     InkWell(
                       onTap: () => Navigator.pop(context),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: AppDecorations.buttonBorderRadius,
                       child: Container(
                         width: 38,
                         height: 38,
                         decoration: const BoxDecoration(
                           color: AppColors.white15,
-                          shape: BoxShape.circle,
+                          borderRadius: AppDecorations.buttonBorderRadius,
                         ),
                         child: const Icon(
                           LucideIcons.arrowLeft,
@@ -137,7 +135,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.background,
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(32),
                     ),
@@ -191,6 +189,12 @@ class _RegisterPageState extends State<RegisterPage> {
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             suffixIcon: IconButton(
+                              style: IconButton.styleFrom(
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius:
+                                      AppDecorations.buttonBorderRadius,
+                                ),
+                              ),
                               icon: Icon(
                                 _obscurePassword
                                     ? LucideIcons.eye
@@ -267,8 +271,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ),
                                   children: [
                                     TextSpan(
-                                      text:
-                                          'Ao criar sua conta, você concorda com nossos ',
+                                      text: 'Ao criar sua conta, você concorda com nossos ',
                                     ),
                                     TextSpan(
                                       text: 'Termos de Uso',

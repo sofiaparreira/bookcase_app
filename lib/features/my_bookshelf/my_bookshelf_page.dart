@@ -1,5 +1,4 @@
 import 'package:bookcase/core/theme/app_decorations.dart';
-import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/button/button_status_book.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
 import 'package:bookcase/shared/widgets/text_field/search_text_field.dart';
@@ -29,6 +28,7 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
       body: Container(
         decoration: AppDecorations.header,
         child: SafeArea(
+          bottom: false,
           child: Column(
             children: [
               Padding(
@@ -53,6 +53,9 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
                           iconSize: 20,
                           style: IconButton.styleFrom(
                             backgroundColor: AppColors.white10,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppDecorations.buttonBorderRadius,
+                            ),
                           ),
                         ),
                       ],
@@ -70,7 +73,7 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
                 child: Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.background,
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(24),
                     ),
@@ -90,9 +93,7 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
                                 child: ButtonStatusBook(
                                   text: 'Lendo',
                                   quantity: 2,
-                                  prefixIcon: Icon(
-                                    LucideIcons.bookOpen,
-                                  ),
+                                  prefixIcon: Icon(LucideIcons.bookOpen),
                                   selected: true,
                                   onPressed: () {},
                                 ),
@@ -101,9 +102,7 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
                                 child: ButtonStatusBook(
                                   text: 'Lendo',
                                   quantity: 2,
-                                  prefixIcon: Icon(
-                                    LucideIcons.bookBookmark,
-                                  ),
+                                  prefixIcon: Icon(LucideIcons.bookBookmark),
                                   selected: false,
                                   onPressed: () {},
                                 ),
@@ -112,9 +111,7 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
                                 child: ButtonStatusBook(
                                   text: 'Lendo',
                                   quantity: 2,
-                                  prefixIcon: Icon(
-                                    LucideIcons.circleCheck,
-                                  ),
+                                  prefixIcon: Icon(LucideIcons.circleCheck),
                                   selected: false,
                                   onPressed: () {},
                                 ),

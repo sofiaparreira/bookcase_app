@@ -13,12 +13,8 @@ class TitleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text, 
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-    style: TextStyle(
-      fontSize: 16,
+    return Text(text, style: TextStyle(
+      fontSize: 18,
       fontWeight: FontWeight.w600,
       color: color ?? AppColors.textPrimary
     ));

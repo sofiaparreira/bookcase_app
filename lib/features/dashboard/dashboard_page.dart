@@ -1,4 +1,5 @@
 import 'package:bookcase/core/theme/app_colors.dart';
+import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/card/metric_card.dart';
@@ -11,7 +12,9 @@ import 'package:flutter/material.dart';
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
-  static const daysOfWeek = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  // Quantidade de dias seguidos lendo (ofensiva)
+  static const int streakDays = 7;
+
   static const List<ReadingBook> readingBooksList = [
     ReadingBook(
       book: Book(
@@ -22,6 +25,7 @@ class DashboardPage extends StatelessWidget {
         status: EnumBookStatus.reading,
         totalPages: 300,
         image: 'https://darkside.vtexassets.com/arquivos/ids/176888/o-retrato-de-dorian-gray.png?v=637655004354600000',
+        genre: 'Ficção gótica',
       ),
       currentPage: 100,
     ),
@@ -34,6 +38,7 @@ class DashboardPage extends StatelessWidget {
         status: EnumBookStatus.reading,
         totalPages: 300,
         image: 'https://darkside.vtexassets.com/arquivos/ids/176888/o-retrato-de-dorian-gray.png?v=637655004354600000',
+        genre: 'Clássico',
       ),
       currentPage: 100,
     ),
@@ -43,214 +48,195 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primary,
-     body: SafeArea(
-  child: Column(
-    children: [
-      // TOPO
-      Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Olá',
-              style: TextStyle(
-                color: Color.fromARGB(180, 255, 255, 255),
-                fontSize: 16,
-                fontWeight: FontWeight.w100,
-              ),
-            ),
-
-            const TitleH1(
-              text: 'Ana',
-              color: Colors.white,
-            ),
-
-            const SizedBox(height: 12),
-
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(26, 255, 255, 255),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                spacing: 6,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.local_fire_department,
-                        color: AppColors.secondary,
+      body: Container(
+        decoration: AppDecorations.header,
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // TOPO (PARTE ROXA)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Olá',
+                          style: TextStyle(
+                            color: Color.fromARGB(180, 255, 255, 255),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w100,
+                          ),
+                        ),
+                        TitleH1(text: 'Ana', color: Colors.white),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        '7 dias de streak',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w400,
+                      decoration: BoxDecoration(
+                        color: AppColors.white15,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.local_fire_department_rounded,
+                            color: AppColors.secondary,
+                            size: 22,
+                          ),
+                          SizedBox(width: 5),
+                          Text(
+                            '$streakDays dias',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const TitleH2(text: 'Lendo agora', color: Colors.white),
+                    TextButton.icon(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppDecorations.buttonBorderRadius,
                         ),
                       ),
-                    ],
-                  ),
+                      label: const Text('Ver estante'),
+                      iconAlignment: IconAlignment.end,
+                      icon: const Icon(Icons.chevron_right),
+                    ),
+                  ],
+                ),
+              ),
 
-                  Row(
-                    children: daysOfWeek.map((day) {
-                      return Expanded(
-                        child: Column(
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                child: Row(
+                  spacing: 12,
+                  children: readingBooksList.map((readingBook) {
+                    return ReadingCard(
+                      title: readingBook.book.title,
+                      author: readingBook.book.author,
+                      genre: readingBook.book.genre,
+                      currentPage: readingBook.currentPage,
+                      totalPages: readingBook.book.totalPages,
+                      progress: readingBook.progress,
+                      progressPercent: readingBook.progressPercent,
+                      imageUrl: readingBook.book.image,
+                      onUpdateProgress: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (context) {
+                            return UpdateReadingProgressModal(
+                              currentPage: readingBook.currentPage,
+                              totalPages: readingBook.book.totalPages,
+                            );
+                          },
+                        );
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              // CONTEÚDO BRANCO
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      spacing: 20,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const TitleH2(text: 'Seu resumo'),
+                        const Row(
+                          spacing: 12,
                           children: [
-                            SizedBox(
-                              height: 44,
-                              child: Card(
-                                color: AppColors.secondary,
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.check_circle_outline,
-                                    color: Colors.white,
-                                    size: 22,
-                                  ),
-                                ),
-                              ),
+                            MetricCard(
+                              number: 10,
+                              icon: Icon(Icons.menu_book),
+                              text: 'Livros lidos',
+                              variant: EnumMetricCardVariant.primary,
                             ),
-                            Text(
-                              day,
-                              style: const TextStyle(
-                                color: Color.fromARGB(
-                                  187,
-                                  255,
-                                  255,
-                                  255,
-                                ),
-                                fontWeight: FontWeight.w200,
-                                fontSize: 11,
-                              ),
+                            MetricCard(
+                              number: 3,
+                              icon: Icon(Icons.emoji_events_outlined),
+                              text: 'Conquistas',
+                              variant: EnumMetricCardVariant.secondary,
+                            ),
+                            MetricCard(
+                              number: 1552,
+                              icon: Icon(Icons.description_outlined),
+                              text: 'Páginas lidas',
+                              variant: EnumMetricCardVariant.neutral,
                             ),
                           ],
                         ),
-                      );
-                    }).toList(),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const TitleH2(text: 'Meta atual'),
+                            ButtonDefault(
+                              text: 'Ver metas',
+                              variant: ButtonVariant.transparent,
+                              suffixIcon: const Icon(Icons.chevron_right),
+                              onPressed: () {},
+                            ),
+                          ],
+                        ),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const TitleH2(text: 'Lista de compras'),
+                            ButtonDefault(
+                              text: 'Ver lista',
+                              variant: ButtonVariant.transparent,
+                              suffixIcon: const Icon(Icons.chevron_right),
+                              onPressed: () {},
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-
-      // CONTEÚDO BRANCO
-      Expanded(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Color(0xFFFAFAFA),
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              spacing: 12,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const TitleH2(text: 'Lendo agora'),
-                    ButtonDefault(
-                      text: 'Ver estante',
-                      variant: ButtonVariant.transparent,
-                      suffixIcon: const Icon(Icons.chevron_right),
-                      onPressed: () {},
-                    ),
-                  ],
-                ),
-
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      spacing: 12,
-                      children: readingBooksList.map((readingBook) {
-                        return ReadingCard(
-                          title: readingBook.book.title,
-                          author: readingBook.book.author,
-                          currentPage: readingBook.currentPage,
-                          totalPages: readingBook.book.totalPages,
-                          progress: readingBook.progress,
-                          progressPercent: readingBook.progressPercent,
-                          onUpdateProgress: () {
-                            showModalBottomSheet(context: context, isScrollControlled: true, builder: (context) {
-                              return UpdateReadingProgressModal(
-                                currentPage: readingBook.currentPage,
-                                totalPages: readingBook.book.totalPages,
-                              );
-                            });
-                          }
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-
-                Row(
-                  spacing: 12,
-                  children: const [
-                    MetricCard(
-                      number: 10,
-                      icon: Icon(Icons.menu_book),
-                      text: 'Livros lidos',
-                      variant: EnumMetricCardVariant.primary,
-                    ),
-                    MetricCard(
-                      number: 3,
-                      icon: Icon(Icons.emoji_events_outlined),
-                      text: 'Conquistas',
-                      variant: EnumMetricCardVariant.secondary,
-                    ),
-                    MetricCard(
-                      number: 1552,
-                      icon: Icon(Icons.description_outlined),
-                      text: 'Páginas lidas',
-                      variant: EnumMetricCardVariant.neutral,
-                    ),
-                  ],
-                ),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const TitleH2(text: 'Meta atual'),
-                    ButtonDefault(
-                      text: 'Ver metas',
-                      variant: ButtonVariant.transparent,
-                      suffixIcon: const Icon(Icons.chevron_right),
-                      onPressed: () {},
-                    ),
-                  ],
-                ),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const TitleH2(text: 'Lista de compras'),
-                    ButtonDefault(
-                      text: 'Ver lista',
-                      variant: ButtonVariant.transparent,
-                      suffixIcon: const Icon(Icons.chevron_right),
-                      onPressed: () {},
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
-    ],
-  ),
-),
     );
   }
 }

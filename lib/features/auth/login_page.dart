@@ -65,8 +65,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showForgotPasswordDialog() {
-    final resetEmailController =
-        TextEditingController(text: _emailController.text);
+    final resetEmailController = TextEditingController(
+      text: _emailController.text,
+    );
 
     showDialog(
       context: context,
@@ -103,6 +104,11 @@ class _LoginPageState extends State<LoginPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
+              style: TextButton.styleFrom(
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppDecorations.buttonBorderRadius,
+                ),
+              ),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
@@ -110,7 +116,7 @@ class _LoginPageState extends State<LoginPage> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppDecorations.buttonBorderRadius,
                 ),
               ),
               onPressed: () async {
@@ -123,7 +129,9 @@ class _LoginPageState extends State<LoginPage> {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('E-mail de recuperação enviado com sucesso!'),
+                      content: Text(
+                        'E-mail de recuperação enviado com sucesso!',
+                      ),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -163,9 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                   alignment: Alignment.center,
                   children: [
                     Positioned.fill(
-                      child: CustomPaint(
-                        painter: _HeaderCirclesPainter(),
-                      ),
+                      child: CustomPaint(painter: _HeaderCirclesPainter()),
                     ),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -204,7 +210,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.background,
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(32),
                     ),
@@ -263,6 +269,12 @@ class _LoginPageState extends State<LoginPage> {
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             suffixIcon: IconButton(
+                              style: IconButton.styleFrom(
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius:
+                                      AppDecorations.buttonBorderRadius,
+                                ),
+                              ),
                               icon: Icon(
                                 _obscurePassword
                                     ? LucideIcons.eye

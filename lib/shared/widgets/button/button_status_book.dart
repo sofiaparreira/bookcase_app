@@ -1,6 +1,5 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
-import 'package:bookcase/core/theme/app_shadow.dart';
 import 'package:flutter/material.dart';
 
 class ButtonStatusBook extends StatefulWidget {
@@ -34,7 +33,7 @@ class _ButtonStatusBookState extends State<ButtonStatusBook> {
         style: ElevatedButton.styleFrom(
           backgroundColor: widget.selected
               ? AppColors.primary
-              : Colors.transparent,
+              : AppColors.cardSurface,
 
           foregroundColor: widget.selected
               ? Colors.white
@@ -44,7 +43,7 @@ class _ButtonStatusBookState extends State<ButtonStatusBook> {
           shadowColor: Colors.transparent,
 
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppDecorations.buttonBorderRadius,
           ),
         ),
         child: Row(

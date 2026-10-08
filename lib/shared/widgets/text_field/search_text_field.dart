@@ -7,8 +7,7 @@ class SearchTextField extends StatelessWidget {
   final TextEditingController controller;
   final bool obscureText;
   final TextInputType? keyboardType;
-
-  final String? Function(String?)? validator;
+final ValueChanged<String>? onSubmitted;
 
   const SearchTextField({
     super.key,
@@ -16,36 +15,36 @@ class SearchTextField extends StatelessWidget {
     required this.controller,
     this.obscureText = false,
     this.keyboardType,
-    this.validator,
+    this.onSubmitted,
   });
 
   @override
   Widget build(BuildContext context) {
-    return 
-        TextFormField(
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          validator: validator,
-          decoration: InputDecoration(
-            prefixIcon: Icon(LucideIcons.search, color: Colors.white70,),
-            hint: Text(label, style: TextStyle(color: Colors.white70),),
-            filled: true,
-            fillColor: AppColors.white15,
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      onSubmitted: onSubmitted,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        prefixIcon: const Icon(LucideIcons.search, color: Colors.white70),
+        hint: Text(label, style: const TextStyle(color: Colors.white70)),
+        filled: true,
+        fillColor: AppColors.white15,
 
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(999),
-              borderSide: const BorderSide(color: AppColors.white20),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(999),
-              borderSide: const BorderSide(color: AppColors.white20),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(999),
-              borderSide: const BorderSide(color: Colors.white30),
-            ),
-          ),
-        );
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: const BorderSide(color: AppColors.white20),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: const BorderSide(color: AppColors.white20),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: const BorderSide(color: Colors.white30),
+        ),
+      ),
+    );
   }
 }

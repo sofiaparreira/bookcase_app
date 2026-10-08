@@ -1,5 +1,4 @@
 import 'package:bookcase/core/theme/app_colors.dart';
-import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:flutter/material.dart';
 
 enum BadgeVariant { primary, secondary, transparent }
@@ -24,7 +23,9 @@ class BadgeDefault extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: variant == BadgeVariant.primary ? AppColors.primary10 : null,
+        color: variant == BadgeVariant.primary
+            ? AppColors.primary10
+            : AppColors.cardSurface,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

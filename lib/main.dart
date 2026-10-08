@@ -7,13 +7,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: 'https://kpnckevunpcdnlhnikol.supabase.co',
-    anonKey:
-        'sb_publishable_6T3UOH_lnm68SbAXsW7mxQ_3VLylpKi',
+    publishableKey: 'sb_publishable_6T3UOH_lnm68SbAXsW7mxQ_3VLylpKi',
   );
 
   final session = Supabase.instance.client.auth.currentSession;
 
-  runApp(App(
-    initialHome: session != null ? null : const LoginPage(),
-  ));
+  runApp(App(initialHome: session == null ? const LoginPage() : null));
 }

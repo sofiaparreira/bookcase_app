@@ -1,44 +1,36 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
+import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:flutter/material.dart';
 
-enum ButtonVariant { primary, secondary, transparent }
-
-enum ButtonWidth { fit, full }
-
-enum ButtonSize { sm, md, lg }
-
-class ButtonDefault extends StatelessWidget {
-  final String text;
+class IconButtonDefault extends StatelessWidget {
+  final Widget icon;
   final VoidCallback? onPressed;
   final ButtonVariant variant;
-  final ButtonWidth width;
-  final Widget? prefixIcon;
-  final Widget? suffixIcon;
   final ButtonSize size;
   final bool isLoading;
+  final String? tooltip;
 
-  const ButtonDefault({
+  const IconButtonDefault({
     super.key,
-    required this.text,
+    required this.icon,
     required this.onPressed,
     this.variant = ButtonVariant.primary,
-    this.width = ButtonWidth.fit,
-    this.prefixIcon,
-    this.suffixIcon,
     this.size = ButtonSize.md,
     this.isLoading = false,
+    this.tooltip,
   });
+
+  double get _dimension => switch (size) {
+    ButtonSize.sm => 36,
+    ButtonSize.md => 44,
+    ButtonSize.lg => 48,
+  };
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width == ButtonWidth.full ? double.infinity : null,
-      height: switch (size) {
-        ButtonSize.sm => 36,
-        ButtonSize.md => 40,
-        ButtonSize.lg => 48,
-      },
+    final button = SizedBox.square(
+      dimension: _dimension,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ButtonStyle(
@@ -54,7 +46,6 @@ class ButtonDefault extends StatelessWidget {
               ButtonVariant.secondary => Colors.white,
             };
           }),
-
           overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
             if (variant == ButtonVariant.transparent &&
                 states.contains(WidgetState.hovered)) {
@@ -63,7 +54,6 @@ class ButtonDefault extends StatelessWidget {
 
             return null;
           }),
-
           foregroundColor: WidgetStateProperty.all(
             variant == ButtonVariant.primary
                 ? Colors.white
@@ -71,45 +61,32 @@ class ButtonDefault extends StatelessWidget {
                 ? AppColors.primary
                 : AppColors.textPrimary,
           ),
-
           elevation: WidgetStateProperty.all(
             variant == ButtonVariant.transparent ||
                     variant == ButtonVariant.secondary
                 ? 0
                 : null,
           ),
-
           shadowColor: WidgetStateProperty.all(
             variant == ButtonVariant.transparent ? Colors.transparent : null,
           ),
-
           side: WidgetStateProperty.all(
             variant == ButtonVariant.secondary
                 ? const BorderSide(color: AppColors.border, width: 1)
                 : BorderSide.none,
           ),
-
           shape: WidgetStateProperty.all(
             const RoundedRectangleBorder(
               borderRadius: AppDecorations.buttonBorderRadius,
             ),
           ),
-
-          padding: WidgetStateProperty.all(
-            EdgeInsets.symmetric(horizontal: size == ButtonSize.sm ? 12 : 20),
-          ),
-
-          textStyle: WidgetStateProperty.all(
-            Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: size == ButtonSize.sm ? 13 : 15,
-            ),
-          ),
+          padding: WidgetStateProperty.all(EdgeInsets.zero),
+          minimumSize: WidgetStateProperty.all(Size.zero),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         child: isLoading
-            ? SizedBox(
-                height: 20,
-                width: 20,
+            ? SizedBox.square(
+                dimension: size == ButtonSize.sm ? 16 : 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: variant == ButtonVariant.primary
@@ -117,16 +94,15 @@ class ButtonDefault extends StatelessWidget {
                       : AppColors.primary,
                 ),
               )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 8,
-                children: [
-                  ?prefixIcon,
-                  Flexible(child: Text(text, overflow: TextOverflow.ellipsis)),
-                  ?suffixIcon,
-                ],
+            : IconTheme.merge(
+                data: IconThemeData(size: size == ButtonSize.sm ? 18 : 22),
+                child: icon,
               ),
       ),
     );
+
+    if (tooltip == null || tooltip!.isEmpty) return button;
+
+    return Tooltip(message: tooltip!, child: button);
   }
 }
