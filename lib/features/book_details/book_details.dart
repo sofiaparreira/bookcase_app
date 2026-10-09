@@ -4,9 +4,10 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
+import 'package:bookcase/shared/widgets/modal/finished_book_modal.dart';
 import 'package:bookcase/shared/widgets/modal/select_book_status_modal.dart';
+import 'package:bookcase/shared/widgets/modal/update_reading_progress_modal.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
-import 'package:bookcase/shared/widgets/text/title_h2.dart';
 import 'package:bookcase/shared/widgets/text/title_h3.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -22,21 +23,33 @@ class BookDetailsPage extends StatelessWidget {
     status: EnumBookStatus.want,
     totalPages: 200,
     image: 'https://m.media-amazon.com/images/I/816Udvs9O7L._AC_UF1000,1000_QL80_.jpg',
-    genre: 'Romance',
   );
 
   Future<void> openBookStatusModal(BuildContext context) async {
     final selectedStatus = await showModalBottomSheet<EnumBookStatus>(
-      context: context, 
+      context: context,
       isScrollControlled: true,
-      constraints: const BoxConstraints(
-        maxWidth: double.infinity
-      ),
-      builder: (context) => const SelectBookStatusModal()
+      constraints: const BoxConstraints(maxWidth: double.infinity),
+      builder: (context) => const SelectBookStatusModal(),
     );
 
-    if(selectedStatus != null) {}
+    if (selectedStatus == null || !context.mounted) return;
+
+    if (selectedStatus == EnumBookStatus.reading) {
+      await showModalBottomSheet(
+        context: context,
+        builder: (context) => const UpdateReadingProgressModal(),
+      );
+    } else if (selectedStatus == EnumBookStatus.finished) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        constraints: const BoxConstraints(maxWidth: double.infinity),
+        builder: (context) => const FinishedBookModal(),
+      );
+    }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,8 +112,11 @@ class BookDetailsPage extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    TitleH1(text: book.title, color: Colors.white),
-                                    
+                                    TitleH1(
+                                      text: book.title,
+                                      color: Colors.white,
+                                    ),
+
                                     const SizedBox(height: 8),
                                     Text(
                                       book.author,
@@ -165,21 +181,11 @@ class BookDetailsPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [                    
+                  children: [
                     SizedBox(
                       height: 118,
                       child: Row(
                         children: [
-                          Expanded(
-                            child: _DetailRow(
-                              icon: LucideIcons.userRound,
-                              label: 'Genero',
-                              value: book.genre.isNotEmpty
-                                  ? book.genre
-                                  : 'Não informado',
-                            ),
-                          ),
-                          const SizedBox(width: 12),
                           Expanded(
                             child: _DetailRow(
                               icon: LucideIcons.bookOpen,
@@ -204,24 +210,40 @@ class BookDetailsPage extends StatelessWidget {
                     ),
                     SizedBox(height: 20),
                     TitleH3(text: "Avaliação geral"),
-                    Row(children: [
-                      Icon(Icons.star, color: Colors.yellow, size: 22),
-                      Icon(Icons.star, color: Colors.yellow, size: 22),
-                      Icon(Icons.star, color: Colors.yellow, size: 22),
-                      Icon(Icons.star, color: Colors.yellow, size: 22),
-                      Icon(Icons.star_outline, color: AppColors.textTertiary, size: 22),
-                      SizedBox(width: 6),
-                      Text(" 4.0", style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-                    ]),
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.yellow, size: 22),
+                        Icon(Icons.star, color: Colors.yellow, size: 22),
+                        Icon(Icons.star, color: Colors.yellow, size: 22),
+                        Icon(Icons.star, color: Colors.yellow, size: 22),
+                        Icon(
+                          Icons.star_outline,
+                          color: AppColors.textTertiary,
+                          size: 22,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          " 4.0",
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                     SizedBox(height: 20),
                     TitleH3(text: "Sinopse"),
-                    Text("Em Tudo É Rio, de Carla Madeira, acompanhamos a história de Dalva e Venâncio, um casal cuja vida é destruída por uma tragédia marcada pelo ciúme. A chegada de Lucy, uma prostituta sedutora, intensifica os conflitos e entrelaça destinos em uma narrativa sobre amor, dor, culpa, perdão e a complexidade das relações humanas."),
+                    Text(
+                      "Em Tudo É Rio, de Carla Madeira, acompanhamos a história de Dalva e Venâncio, um casal cuja vida é destruída por uma tragédia marcada pelo ciúme. A chegada de Lucy, uma prostituta sedutora, intensifica os conflitos e entrelaça destinos em uma narrativa sobre amor, dor, culpa, perdão e a complexidade das relações humanas.",
+                    ),
                     const Spacer(),
                     ButtonDefault(
                       text: 'Adicionar à estante',
                       width: ButtonWidth.full,
+                      size: ButtonSize.lg,
                       prefixIcon: const Icon(LucideIcons.plus, size: 19),
-                      onPressed: () => openBookStatusModal(context)
+                      onPressed: () => openBookStatusModal(context),
                     ),
                   ],
                 ),

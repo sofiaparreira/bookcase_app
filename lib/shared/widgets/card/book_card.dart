@@ -19,7 +19,7 @@ class BookCard extends StatelessWidget {
     required this.author,
     required this.totalPages,
     this.imageUrl,
-    this.onPressedCard
+    this.onPressedCard,
   });
 
   @override
@@ -46,7 +46,30 @@ class BookCard extends StatelessWidget {
                     children: [
                       TitleCard(text: title),
                       Text(author),
-                      Text(totalPages.toString()),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.bookOpen,
+                            size: 14,
+                            color: AppColors.textTertiary,
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              totalPages > 0
+                                  ? '$totalPages páginas'
+                                  : 'Páginas não informadas',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

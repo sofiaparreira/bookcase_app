@@ -25,7 +25,6 @@ class DashboardPage extends StatelessWidget {
         status: EnumBookStatus.reading,
         totalPages: 300,
         image: 'https://darkside.vtexassets.com/arquivos/ids/176888/o-retrato-de-dorian-gray.png?v=637655004354600000',
-        genre: 'Ficção gótica',
       ),
       currentPage: 100,
     ),
@@ -38,7 +37,6 @@ class DashboardPage extends StatelessWidget {
         status: EnumBookStatus.reading,
         totalPages: 300,
         image: 'https://darkside.vtexassets.com/arquivos/ids/176888/o-retrato-de-dorian-gray.png?v=637655004354600000',
-        genre: 'Clássico',
       ),
       currentPage: 100,
     ),
@@ -138,7 +136,6 @@ class DashboardPage extends StatelessWidget {
                     return ReadingCard(
                       title: readingBook.book.title,
                       author: readingBook.book.author,
-                      genre: readingBook.book.genre,
                       currentPage: readingBook.currentPage,
                       totalPages: readingBook.book.totalPages,
                       progress: readingBook.progress,

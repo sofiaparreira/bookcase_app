@@ -7,7 +7,6 @@ class Book {
   final EnumBookStatus status;
   final int totalPages;
   final String image;
-  final String genre;
 
   const Book({
     required this.id,
@@ -17,12 +16,17 @@ class Book {
     required this.status,
     required this.totalPages,
     required this.image,
-    required this.genre,
   });
 
   factory Book.fromOpenLibrary(Map<String, dynamic> json) {
     final coverId = json['cover_i'];
-    final subjects = json['subject'] as List<dynamic>?;
+    final pages = json['number_of_pages_median'];
+    final totalPages = switch (pages) {
+      int value => value,
+      num value => value.toInt(),
+      String value => int.tryParse(value) ?? 0,
+      _ => 0,
+    };
 
     return Book(
       id: json['key']?.hashCode ?? 0,
@@ -30,37 +34,25 @@ class Book {
       author: json['author_name'] != null
           ? json['author_name'][0]
           : 'Autor desconhecido',
-      isbn: json['isbn'] != null
-          ? json['isbn'][0]
-          : '',
+      isbn: json['isbn'] != null ? json['isbn'][0] : '',
       status: EnumBookStatus.want,
-      totalPages: json['number_of_pages_median'] ?? 0,
+      totalPages: totalPages,
       image: coverId != null
           ? 'https://covers.openlibrary.org/b/id/$coverId-M.jpg'
           : '',
-      genre: subjects != null && subjects.isNotEmpty
-          ? subjects[0].toString()
-          : 'Gênero desconhecido',
     );
   }
 }
 
 // Status de leitura
-enum EnumBookStatus {
-  want,
-  reading,
-  finished,
-}
+enum EnumBookStatus { want, reading, finished }
 
 // Livros - Lendo
 class ReadingBook {
   final Book book;
   final int currentPage;
 
-  const ReadingBook({
-    required this.book,
-    required this.currentPage,
-  });
+  const ReadingBook({required this.book, required this.currentPage});
 
   double get progress =>
       book.totalPages == 0 ? 0 : currentPage / book.totalPages;

@@ -4,12 +4,12 @@ import 'package:bookcase/core/theme/app_colors.dart';
 
 class AppDecorations {
   static const BorderRadius buttonBorderRadius = BorderRadius.all(
-    Radius.circular(20),
+    Radius.circular(18),
   );
 
   static BoxDecoration get card => BoxDecoration(
     color: AppColors.cardSurface,
-    borderRadius: BorderRadius.circular(20),
+    borderRadius: BorderRadius.circular(24),
     boxShadow: AppShadows.card,
   );
 

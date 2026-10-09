@@ -17,30 +17,48 @@ class SearchBooksPage extends StatefulWidget {
 
 class _SearchBooksPageState extends State<SearchBooksPage> {
   final TextEditingController searchController = TextEditingController();
-  String selectedCategory = "all";
   final OpenLibraryService openLibraryService = OpenLibraryService();
 
   List<Book> searchedBooks = [];
-  bool? hasSearched = false;
-
-  static const List<({String value, String label})> categories = [
-    (value: 'all', label: 'Todos'),
-    (value: 'fiction', label: 'Ficção'),
-    (value: 'thriller', label: 'Suspense'),
-    (value: 'romance', label: 'Romance'),
-    (value: 'fantasy', label: 'Fantasia'),
-    (value: 'horror', label: 'Terror'),
-    (value: 'biography', label: 'Biografia'),
-  ];
+  bool hasSearched = false;
+  bool isLoading = false;
 
   Future<void> searchBooks() async {
-    final result = await openLibraryService.searchBooks(searchController.text);
-    if (!mounted) return;
+    final search = searchController.text.trim();
+    if (search.isEmpty || isLoading) return;
 
     setState(() {
-      searchedBooks = result;
-      hasSearched = true;
+      isLoading = true;
+      searchedBooks = [];
     });
+
+    try {
+      final result = await openLibraryService.searchBooks(search);
+      if (!mounted) return;
+
+      setState(() {
+        searchedBooks = result;
+        hasSearched = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        hasSearched = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível buscar os livros. Tente novamente.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -69,7 +87,7 @@ class _SearchBooksPageState extends State<SearchBooksPage> {
                   children: [
                     const TitleH1(text: "Buscar livros", color: Colors.white),
                     SearchTextField(
-                      label: "Buscar por título, autor ou gênero",
+                      label: "Buscar por título ou autor",
                       controller: searchController,
                       onSubmitted: (value) {
                         if (value.trim().isEmpty) return;
@@ -93,40 +111,15 @@ class _SearchBooksPageState extends State<SearchBooksPage> {
                   ),
                   child: Column(
                     children: [
-                      SizedBox(
-                        height: 82,
-                        child: ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                          scrollDirection: Axis.horizontal,
-                          itemCount: categories.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final category = categories[index];
-
-                            return _CategoryChip(
-                              label: category.label,
-                              selected: selectedCategory == category.value,
-                              onSelected: (isSelected) {
-                                setState(() {
-                                  selectedCategory = isSelected
-                                      ? category.value
-                                      : "all";
-                                });
-                              },
-                            );
-                          },
-                        ),
-                      ),
                       Expanded(
-                        child: searchedBooks.isEmpty
-                            ? _SearchEmptyState(
-                                hasSearched: hasSearched ?? false,
-                              )
+                        child: isLoading
+                            ? const _SearchSkeletonList()
+                            : searchedBooks.isEmpty
+                            ? _SearchEmptyState(hasSearched: hasSearched)
                             : ListView.separated(
                                 padding: const EdgeInsets.fromLTRB(
                                   20,
-                                  0,
+                                  20,
                                   20,
                                   20,
                                 ),
@@ -161,6 +154,116 @@ class _SearchBooksPageState extends State<SearchBooksPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SearchSkeletonList extends StatefulWidget {
+  const _SearchSkeletonList();
+
+  @override
+  State<_SearchSkeletonList> createState() => _SearchSkeletonListState();
+}
+
+class _SearchSkeletonListState extends State<_SearchSkeletonList>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController animationController;
+  late final Animation<double> opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    )..repeat(reverse: true);
+    opacity = Tween<double>(begin: 0.45, end: 0.9).animate(
+      CurvedAnimation(parent: animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: FadeTransition(
+        opacity: opacity,
+        child: ListView.separated(
+          padding: const EdgeInsets.all(20),
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 4,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) => const _BookCardSkeleton(),
+        ),
+      ),
+    );
+  }
+}
+
+class _BookCardSkeleton extends StatelessWidget {
+  const _BookCardSkeleton();
+
+  static const skeletonColor = Color(0xFFE8E4DF);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 144,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: AppDecorations.card.borderRadius,
+      ),
+      child: Row(
+        children: [
+          const _SkeletonBox(width: 82, height: 124, borderRadius: 12),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 8),
+                _SkeletonBox(width: double.infinity, height: 16),
+                SizedBox(height: 10),
+                _SkeletonBox(width: 140, height: 12),
+                SizedBox(height: 10),
+                _SkeletonBox(width: 52, height: 12),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          const _SkeletonBox(width: 36, height: 36, borderRadius: 10),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  final double width;
+  final double height;
+  final double borderRadius;
+
+  const _SkeletonBox({
+    required this.width,
+    required this.height,
+    this.borderRadius = 6,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: _BookCardSkeleton.skeletonColor,
+        borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
   }
@@ -212,7 +315,7 @@ class _SearchEmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               hasSearched
-                  ? 'Tente pesquisar outro título, autor ou gênero.'
+                  ? 'Tente pesquisar outro título ou autor.'
                   : 'Faça uma pesquisa para encontrar livros.',
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -223,45 +326,6 @@ class _SearchEmptyState extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final ValueChanged<bool> onSelected;
-
-  const _CategoryChip({
-    required this.label,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: onSelected,
-      selectedColor: AppColors.primary,
-      backgroundColor: AppColors.cardSurface,
-      disabledColor: AppColors.cardSurface,
-      side: BorderSide.none,
-      shape: const RoundedRectangleBorder(
-        borderRadius: AppDecorations.buttonBorderRadius,
-      ),
-      showCheckmark: false,
-      elevation: 0,
-      pressElevation: 0,
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-      labelStyle: TextStyle(
-        color: selected ? Colors.white : AppColors.textPrimary,
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
       ),
     );
   }

@@ -1,4 +1,6 @@
 import 'package:bookcase/core/theme/app_colors.dart';
+import 'package:bookcase/core/theme/app_decorations.dart';
+import 'package:bookcase/models/book.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -10,6 +12,10 @@ class SelectBookStatusModal extends StatefulWidget {
 }
 
 class _SelectBookStatusModalState extends State<SelectBookStatusModal> {
+  void onPressedStatus(EnumBookStatus status) {
+    Navigator.pop(context, status);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -22,20 +28,29 @@ class _SelectBookStatusModalState extends State<SelectBookStatusModal> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5E7EB),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            SizedBox(height: 12),
             _SelectBookStatusButton(
               text: "Lendo",
               icon: Icon(LucideIcons.bookOpen),
-              onPressed: () {},
+              onPressed: () => onPressedStatus(EnumBookStatus.reading),
             ),
             _SelectBookStatusButton(
               text: "Lido",
               icon: Icon(LucideIcons.bookCheck),
-              onPressed: () {},
+              onPressed: () => onPressedStatus(EnumBookStatus.finished),
             ),
             _SelectBookStatusButton(
               text: "Quero Ler",
               icon: Icon(LucideIcons.bookmarkPlus),
-              onPressed: () {},
+              onPressed: () => onPressedStatus(EnumBookStatus.want),
               showBottomBorder: false,
             ),
           ],
@@ -63,11 +78,13 @@ class _SelectBookStatusButton extends StatelessWidget {
     return InkWell(
       onTap: onPressed,
       hoverColor: AppColors.cardSurface,
+      borderRadius: AppDecorations.buttonBorderRadius,
       child: Container(
         width: double.infinity,
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
+          borderRadius: AppDecorations.buttonBorderRadius,
           border: showBottomBorder
               ? const Border(
                   bottom: BorderSide(

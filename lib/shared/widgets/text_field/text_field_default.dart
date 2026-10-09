@@ -10,6 +10,8 @@ class TextFieldDefault extends StatelessWidget {
   final Widget? suffixIcon;
   final String? hintText;
   final String? Function(String?)? validator;
+  final VoidCallback? onTap;
+  final bool readOnly;
 
   const TextFieldDefault({
     super.key,
@@ -21,6 +23,8 @@ class TextFieldDefault extends StatelessWidget {
     this.suffixIcon,
     this.hintText,
     this.validator,
+    this.onTap,
+    this.readOnly = false,
   });
 
   @override
@@ -42,16 +46,12 @@ class TextFieldDefault extends StatelessWidget {
           obscureText: obscureText,
           keyboardType: keyboardType,
           validator: validator,
-          style: const TextStyle(
-            fontSize: 15,
-            color: AppColors.textPrimary,
-          ),
+          onTap: onTap,
+          readOnly: readOnly,
+          style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: const TextStyle(
-              color: Color(0xFFB8B8B8),
-              fontSize: 14,
-            ),
+            hintStyle: const TextStyle(color: Color(0xFFB8B8B8), fontSize: 14),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 14,
@@ -75,11 +75,14 @@ class TextFieldDefault extends StatelessWidget {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.redAccent),
+              borderSide: const BorderSide(color: AppColors.primary),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
         ),

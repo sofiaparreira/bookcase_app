@@ -2,13 +2,13 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/shared/widgets/badge_default.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
+import 'package:bookcase/shared/widgets/progress/reading_progress_bar.dart';
 import 'package:bookcase/shared/widgets/title_card.dart';
 import 'package:flutter/material.dart';
 
 class ReadingCard extends StatelessWidget {
   final String title;
   final String author;
-  final String genre;
   final int currentPage;
   final int totalPages;
   final double progress;
@@ -20,7 +20,6 @@ class ReadingCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.author,
-    required this.genre,
     required this.currentPage,
     required this.totalPages,
     required this.progress,
@@ -76,30 +75,7 @@ class ReadingCard extends StatelessWidget {
                     style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                   ),
 
-                  const SizedBox(height: 7),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardSurface,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      genre,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -125,14 +101,9 @@ class ReadingCard extends StatelessWidget {
 
                   const SizedBox(height: 6),
 
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 6,
-                      backgroundColor: AppColors.surfaceBorder,
-                      color: AppColors.primary,
-                    ),
+                  ReadingProgressBar(
+                    progress: progress,
+                    semanticLabel: 'Progresso de leitura de $title',
                   ),
 
                   const SizedBox(height: 12),

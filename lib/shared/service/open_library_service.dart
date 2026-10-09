@@ -8,6 +8,7 @@ class OpenLibraryService {
     final url = Uri.https('openlibrary.org', '/search.json', {
       'q': search,
       'limit': '20',
+      'fields': 'key,title,author_name,isbn,cover_i,number_of_pages_median',
     });
 
     final response = await http.get(url);
