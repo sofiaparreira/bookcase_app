@@ -1,5 +1,6 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
+import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/features/shopping_list/shopping_list_page.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
@@ -177,28 +178,33 @@ class DashboardPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const TitleH2(text: 'Seu resumo'),
-                        const Row(
-                          spacing: 12,
-                          children: [
-                            MetricCard(
-                              number: 10,
-                              icon: Icon(Icons.menu_book),
-                              text: 'Livros lidos',
-                              variant: EnumMetricCardVariant.primary,
-                            ),
-                            MetricCard(
-                              number: 3,
-                              icon: Icon(Icons.emoji_events_outlined),
-                              text: 'Conquistas',
-                              variant: EnumMetricCardVariant.secondary,
-                            ),
-                            MetricCard(
-                              number: 1552,
-                              icon: Icon(Icons.description_outlined),
-                              text: 'Páginas lidas',
-                              variant: EnumMetricCardVariant.neutral,
-                            ),
-                          ],
+                        ListenableBuilder(
+                          listenable: BookshelfStore.instance,
+                          builder: (context, _) => Row(
+                            spacing: 12,
+                            children: [
+                              MetricCard(
+                                number: BookshelfStore.instance.countWithStatus(
+                                  EnumBookStatus.finished,
+                                ),
+                                icon: const Icon(Icons.menu_book),
+                                text: 'Livros lidos',
+                                variant: EnumMetricCardVariant.primary,
+                              ),
+                              const MetricCard(
+                                number: 3,
+                                icon: Icon(Icons.emoji_events_outlined),
+                                text: 'Conquistas',
+                                variant: EnumMetricCardVariant.secondary,
+                              ),
+                              const MetricCard(
+                                number: 1552,
+                                icon: Icon(Icons.description_outlined),
+                                text: 'Páginas lidas',
+                                variant: EnumMetricCardVariant.neutral,
+                              ),
+                            ],
+                          ),
                         ),
 
                         Row(

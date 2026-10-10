@@ -7,7 +7,7 @@ class SearchTextField extends StatelessWidget {
   final TextEditingController controller;
   final bool obscureText;
   final TextInputType? keyboardType;
-final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onSubmitted;
 
   const SearchTextField({
     super.key,

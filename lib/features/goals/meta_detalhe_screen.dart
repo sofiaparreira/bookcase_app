@@ -1,6 +1,7 @@
 // Tela: Detalhe da Meta
 // Integrante: Joao vitor kadus
 import 'package:flutter/material.dart';
+
 import 'meta_form_screen.dart';
 
 class MetaItem {
@@ -49,10 +50,7 @@ class MetaDetalheScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              meta.titulo,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
+            Text(meta.titulo, style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text('Meta de ${meta.tipo} • prazo até ${meta.prazo}'),
             const SizedBox(height: 24),

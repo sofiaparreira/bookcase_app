@@ -5,22 +5,19 @@ class TitleCard extends StatelessWidget {
   final String text;
   final Color? color;
 
-  const TitleCard({
-    super.key,
-    required this.text,
-    this.color
-  });
+  const TitleCard({super.key, required this.text, this.color});
 
   @override
   Widget build(BuildContext context) {
     return Text(
-      text, 
+      text,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
-    style: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-      color: color ?? AppColors.textPrimary
-    ));
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: color ?? AppColors.textPrimary,
+      ),
+    );
   }
 }

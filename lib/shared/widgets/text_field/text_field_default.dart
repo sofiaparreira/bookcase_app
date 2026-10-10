@@ -12,6 +12,7 @@ class TextFieldDefault extends StatelessWidget {
   final String? Function(String?)? validator;
   final VoidCallback? onTap;
   final bool readOnly;
+  final AutovalidateMode? autovalidateMode;
 
   const TextFieldDefault({
     super.key,
@@ -25,6 +26,7 @@ class TextFieldDefault extends StatelessWidget {
     this.validator,
     this.onTap,
     this.readOnly = false,
+    this.autovalidateMode,
   });
 
   @override
@@ -48,6 +50,7 @@ class TextFieldDefault extends StatelessWidget {
           validator: validator,
           onTap: onTap,
           readOnly: readOnly,
+          autovalidateMode: autovalidateMode,
           style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hintText,

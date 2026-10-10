@@ -8,13 +8,25 @@ import 'package:flutter/services.dart';
 
 enum ProgressType { pages, percentage }
 
+class ReadingProgressResult {
+  final double progress;
+  final int totalPages;
+
+  const ReadingProgressResult({
+    required this.progress,
+    required this.totalPages,
+  });
+}
+
 class UpdateReadingProgressModal extends StatefulWidget {
+  final String? title;
   final int? currentPage;
   final int? totalPages;
   final double? currentPercentage;
 
   const UpdateReadingProgressModal({
     super.key,
+    this.title,
     this.currentPage,
     this.totalPages,
     this.currentPercentage,
@@ -37,6 +49,7 @@ class _UpdateReadingProgressModalState
   @override
   void initState() {
     super.initState();
+    if (totalPages == 0) selectedType = ProgressType.percentage;
     pageController = TextEditingController(
       text: widget.currentPage?.toString() ?? '',
     );
@@ -166,7 +179,12 @@ class _UpdateReadingProgressModalState
               spacing: 16,
               children: [
                 const TitleH2(text: 'Atualizar progresso'),
-                const Text("Nome do livro"),
+                Text(
+                  widget.title ?? "Nome do livro",
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
                 Container(
                   height: 42,
                   padding: const EdgeInsets.all(3),
@@ -260,7 +278,13 @@ class _UpdateReadingProgressModalState
                 ButtonDefault(
                   text: "Salvar",
                   width: ButtonWidth.full,
-                  onPressed: () {},
+                  onPressed: () => Navigator.pop(
+                    context,
+                    ReadingProgressResult(
+                      progress: _progress.clamp(0.0, 1.0),
+                      totalPages: totalPages,
+                    ),
+                  ),
                 ),
               ],
             ),

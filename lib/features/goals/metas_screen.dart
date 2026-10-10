@@ -1,6 +1,7 @@
 // Tela: Metas (lista)
 // Integrante: Joao vitor kadus
 import 'package:flutter/material.dart';
+
 import 'meta_detalhe_screen.dart';
 import 'meta_form_screen.dart';
 
@@ -38,12 +39,19 @@ const List<MetaItem> _metas = [
 class MetasScreen extends StatelessWidget {
   const MetasScreen({super.key});
 
+  static const double _bottomNavigationSpace = 76;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Minhas metas')),
       body: ListView.builder(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(
+          12,
+          12,
+          12,
+          _bottomNavigationSpace + 80,
+        ),
         itemCount: _metas.length,
         itemBuilder: (context, i) {
           final meta = _metas[i];
@@ -61,7 +69,9 @@ class MetasScreen extends StatelessWidget {
                   children: [
                     LinearProgressIndicator(value: meta.progresso),
                     const SizedBox(height: 4),
-                    Text('${meta.atual} de ${meta.total} ${meta.tipo} • até ${meta.prazo}'),
+                    Text(
+                      '${meta.atual} de ${meta.total} ${meta.tipo} • até ${meta.prazo}',
+                    ),
                   ],
                 ),
               ),
@@ -78,15 +88,18 @@ class MetasScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: const Text('Nova meta'),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MetaFormScreen()),
-          );
-        },
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: _bottomNavigationSpace),
+        child: FloatingActionButton.extended(
+          icon: const Icon(Icons.add),
+          label: const Text('Nova meta'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MetaFormScreen()),
+            );
+          },
+        ),
       ),
     );
   }

@@ -1,25 +1,68 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
+import 'package:bookcase/shared/widgets/book_cover.dart';
 import 'package:bookcase/shared/widgets/text/title_h2.dart';
 import 'package:bookcase/shared/widgets/text_field/text_field_default.dart';
 import 'package:flutter/material.dart';
 
 class FinishedBookModal extends StatefulWidget {
-  const new({super.key});
+  final String? title;
+  final String? author;
+  final String? imageUrl;
+  final int? totalPages;
+
+  final int? initialRating;
+
+  const FinishedBookModal({
+    super.key,
+    this.title,
+    this.author,
+    this.imageUrl,
+    this.totalPages,
+    this.initialRating,
+  });
 
   @override
   State<FinishedBookModal> createState() => _FinishedBookModalState();
 }
 
+class FinishedBookResult {
+  final int rating;
+  final DateTime finishedAt;
+
+  const FinishedBookResult({required this.rating, required this.finishedAt});
+}
+
 class _FinishedBookModalState extends State<FinishedBookModal> {
-  int rating = 0;
-  final dateFinished = TextEditingController();
+  late int rating = widget.initialRating ?? 0;
+  DateTime finishedAt = DateTime.now();
+  late final dateFinished = TextEditingController(
+    text: _formatDate(finishedAt),
+  );
+  bool showRatingError = false;
+
+  static String _formatDate(DateTime date) =>
+      "${date.day.toString().padLeft(2, '0')}/"
+      "${date.month.toString().padLeft(2, '0')}/"
+      "${date.year}";
+
+  void confirm() {
+    if (rating == 0) {
+      setState(() => showRatingError = true);
+      return;
+    }
+
+    Navigator.pop(
+      context,
+      FinishedBookResult(rating: rating, finishedAt: finishedAt),
+    );
+  }
 
   Future<void> selectDate(BuildContext context) async {
     final DateTime? selectedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: finishedAt,
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       locale: const Locale('pt', 'BR'),
@@ -64,10 +107,8 @@ class _FinishedBookModalState extends State<FinishedBookModal> {
     );
 
     if (selectedDate != null && mounted) {
-      dateFinished.text =
-          "${selectedDate.day.toString().padLeft(2, '0')}/"
-          "${selectedDate.month.toString().padLeft(2, '0')}/"
-          "${selectedDate.year}";
+      finishedAt = selectedDate;
+      dateFinished.text = _formatDate(selectedDate);
     }
   }
 
@@ -136,9 +177,19 @@ class _FinishedBookModalState extends State<FinishedBookModal> {
 
               Text(
                 rating == 0
-                    ? "Selecione uma avaliação"
+                    ? showRatingError
+                          ? "A avaliação é obrigatória para finalizar"
+                          : "Selecione uma avaliação"
                     : "$rating de 5 estrelas",
-                style: const TextStyle(color: Colors.grey, fontSize: 13),
+                style: TextStyle(
+                  color: rating == 0 && showRatingError
+                      ? AppColors.danger
+                      : Colors.grey,
+                  fontSize: 13,
+                  fontWeight: rating == 0 && showRatingError
+                      ? FontWeight.w600
+                      : FontWeight.normal,
+                ),
               ),
 
               const SizedBox(height: 32),
@@ -154,7 +205,7 @@ class _FinishedBookModalState extends State<FinishedBookModal> {
 
               ButtonDefault(
                 text: "Confirmar leitura",
-                onPressed: () {},
+                onPressed: confirm,
                 width: ButtonWidth.full,
               ),
             ],
@@ -174,38 +225,37 @@ class _FinishedBookModalState extends State<FinishedBookModal> {
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              "https://m.media-amazon.com/images/I/816Udvs9O7L._AC_UF1000,1000_QL80_.jpg",
-              width: 64,
-              height: 90,
-              fit: BoxFit.cover,
-            ),
-          ),
+          BookCover(imageUrl: widget.imageUrl, width: 64, height: 90),
 
           const SizedBox(width: 16),
 
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Título do livro",
+                  widget.title ?? "Título do livro",
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  "Autor",
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                  widget.author ?? "Autor",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
-                SizedBox(height: 8),
-                Text(
-                  "120 páginas · Romance",
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
+                if ((widget.totalPages ?? 0) > 0) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    "${widget.totalPages} páginas",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
               ],
             ),
           ),
@@ -226,9 +276,11 @@ class _FinishedBookModalState extends State<FinishedBookModal> {
               borderRadius: AppDecorations.buttonBorderRadius,
             ),
           ),
+          tooltip: '${index + 1} de 5',
           onPressed: () {
             setState(() {
               rating = index + 1;
+              showRatingError = false;
             });
           },
           icon: Icon(

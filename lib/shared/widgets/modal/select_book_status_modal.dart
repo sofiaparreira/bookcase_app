@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class SelectBookStatusModal extends StatefulWidget {
-  const SelectBookStatusModal({super.key});
+  final EnumBookStatus? currentStatus;
+
+  const SelectBookStatusModal({super.key, this.currentStatus});
 
   @override
   State<SelectBookStatusModal> createState() => _SelectBookStatusModalState();
@@ -38,19 +40,22 @@ class _SelectBookStatusModalState extends State<SelectBookStatusModal> {
             ),
             SizedBox(height: 12),
             _SelectBookStatusButton(
+              text: "Quero ler",
+              icon: Icon(LucideIcons.bookmarkPlus),
+              selected: widget.currentStatus == EnumBookStatus.want,
+              onPressed: () => onPressedStatus(EnumBookStatus.want),
+            ),
+            _SelectBookStatusButton(
               text: "Lendo",
               icon: Icon(LucideIcons.bookOpen),
+              selected: widget.currentStatus == EnumBookStatus.reading,
               onPressed: () => onPressedStatus(EnumBookStatus.reading),
             ),
             _SelectBookStatusButton(
               text: "Lido",
               icon: Icon(LucideIcons.bookCheck),
+              selected: widget.currentStatus == EnumBookStatus.finished,
               onPressed: () => onPressedStatus(EnumBookStatus.finished),
-            ),
-            _SelectBookStatusButton(
-              text: "Quero Ler",
-              icon: Icon(LucideIcons.bookmarkPlus),
-              onPressed: () => onPressedStatus(EnumBookStatus.want),
               showBottomBorder: false,
             ),
           ],
@@ -65,12 +70,14 @@ class _SelectBookStatusButton extends StatelessWidget {
   final String text;
   final Widget icon;
   final bool showBottomBorder;
+  final bool selected;
 
   const new({
     required this.onPressed,
     required this.text,
     required this.icon,
     this.showBottomBorder = true,
+    this.selected = false,
   });
 
   @override
@@ -97,9 +104,24 @@ class _SelectBookStatusButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            icon,
+            IconTheme.merge(
+              data: IconThemeData(
+                color: selected ? AppColors.primary : AppColors.textPrimary,
+              ),
+              child: icon,
+            ),
             const SizedBox(width: 16),
-            Text(text, style: const TextStyle(color: AppColors.textPrimary)),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: selected ? AppColors.primary : AppColors.textPrimary,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                ),
+              ),
+            ),
+            if (selected)
+              const Icon(LucideIcons.check, size: 18, color: AppColors.primary),
           ],
         ),
       ),
