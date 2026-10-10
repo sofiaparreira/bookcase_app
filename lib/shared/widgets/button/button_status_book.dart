@@ -29,7 +29,7 @@ class _ButtonStatusBookState extends State<ButtonStatusBook> {
       height: 40,
       decoration: AppDecorations.button,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: widget.onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: widget.selected
               ? AppColors.primary
@@ -41,35 +41,46 @@ class _ButtonStatusBookState extends State<ButtonStatusBook> {
 
           elevation: 0,
           shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
 
           shape: RoundedRectangleBorder(
             borderRadius: AppDecorations.buttonBorderRadius,
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            if (widget.prefixIcon != null)
-              IconTheme(
-                data: IconThemeData(
-                  color: widget.selected ? Colors.white : AppColors.primary,
-                  size: 20,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 6,
+            children: [
+              if (widget.prefixIcon != null)
+                IconTheme(
+                  data: IconThemeData(
+                    color: widget.selected ? Colors.white : AppColors.primary,
+                    size: 18,
+                  ),
+                  child: widget.prefixIcon!,
                 ),
-                child: widget.prefixIcon!,
-              ),
 
-            Text(widget.text, style: TextStyle(fontWeight: FontWeight.w500)),
-            CircleAvatar(
-              backgroundColor: widget.selected
-                  ? AppColors.white15
-                  : AppColors.cream,
-              radius: 11,
-              child: Text(
-                widget.quantity.toString(),
-                style: TextStyle(color: AppColors.primary),
+              Text(
+                widget.text,
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
-            ),
-          ],
+              CircleAvatar(
+                backgroundColor: widget.selected
+                    ? AppColors.white15
+                    : AppColors.cream,
+                radius: 11,
+                child: Text(
+                  widget.quantity.toString(),
+                  style: TextStyle(
+                    color: widget.selected ? Colors.white : AppColors.primary,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

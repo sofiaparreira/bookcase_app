@@ -7,6 +7,8 @@ import 'package:bookcase/shared/widgets/bottom_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:bookcase/features/profile_page/profile_page.dart';
+import 'package:bookcase/features/goals/metas_screen.dart';
 
 class App extends StatefulWidget {
   final Widget? initialHome;
@@ -20,12 +22,16 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   int currentIndex = 0;
 
-  final List<Widget> pages = const [
-    DashboardPage(),
-    MyBookshelfPage(),
-    SearchBooksPage(),
-    // GoalsPage(),
-    // ProfilePage(),
+  static const searchPageIndex = 2;
+
+  int searchPageKey = 0;
+
+  List<Widget> get pages => [
+    const DashboardPage(),
+    const MyBookshelfPage(),
+    SearchBooksPage(key: ValueKey(searchPageKey)),
+    const MetasScreen(),
+    const ProfilePage(),
   ];
 
   @override
@@ -65,6 +71,10 @@ class _AppState extends State<App> {
               currentIndex: currentIndex,
               onTap: (index) {
                 setState(() {
+                  if (currentIndex == searchPageIndex &&
+                      index != searchPageIndex) {
+                    searchPageKey++;
+                  }
                   currentIndex = index;
                 });
               },

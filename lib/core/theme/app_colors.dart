@@ -13,6 +13,8 @@ class AppColors {
   static const rose = Color(0xFFA9767A);
   static const cream = Color(0xFFF1F2CE);
 
+  static const danger = Color(0xFFEF4B4B);
+
   static const border = surfaceBorder;
 
   // Hierarquia de cores para textos

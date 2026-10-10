@@ -1,6 +1,8 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/book_details/book_details.dart';
+import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
+import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/service/open_library_service.dart';
 import 'package:bookcase/shared/widgets/card/book_card.dart';
@@ -116,35 +118,46 @@ class _SearchBooksPageState extends State<SearchBooksPage> {
                             ? const _SearchSkeletonList()
                             : searchedBooks.isEmpty
                             ? _SearchEmptyState(hasSearched: hasSearched)
-                            : ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(
-                                  20,
-                                  20,
-                                  20,
-                                  20,
-                                ),
-                                itemCount: searchedBooks.length,
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                  final book = searchedBooks[index];
+                            : ListenableBuilder(
+                                listenable: BookshelfStore.instance,
+                                builder: (context, _) => ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    20,
+                                    20,
+                                    100,
+                                  ),
+                                  itemCount: searchedBooks.length,
+                                  separatorBuilder: (context, index) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    final book = searchedBooks[index];
 
-                                  return BookCard(
-                                    title: book.title,
-                                    author: book.author,
-                                    totalPages: book.totalPages,
-                                    imageUrl: book.image,
-                                    onPressedCard: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const BookDetailsPage(),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
+                                    return BookCard(
+                                      title: book.title,
+                                      author: book.author,
+                                      totalPages: book.totalPages,
+                                      imageUrl: book.image,
+                                      isAdded: BookshelfStore.instance.contains(
+                                        book,
+                                      ),
+                                      onPressedAdd: () =>
+                                          BookshelfActions.selectStatus(
+                                            context,
+                                            book,
+                                          ),
+                                      onPressedCard: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const BookDetailsPage(),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
                               ),
                       ),
                     ],

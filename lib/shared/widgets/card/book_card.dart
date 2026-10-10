@@ -1,5 +1,6 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
+import 'package:bookcase/shared/widgets/book_cover.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/button/icon_button_default.dart';
 import 'package:bookcase/shared/widgets/title_card.dart';
@@ -12,6 +13,9 @@ class BookCard extends StatelessWidget {
   final int totalPages;
   final String? imageUrl;
   final VoidCallback? onPressedCard;
+  final VoidCallback? onPressedAdd;
+
+  final bool isAdded;
 
   const BookCard({
     super.key,
@@ -20,6 +24,8 @@ class BookCard extends StatelessWidget {
     required this.totalPages,
     this.imageUrl,
     this.onPressedCard,
+    this.onPressedAdd,
+    this.isAdded = false,
   });
 
   @override
@@ -38,7 +44,7 @@ class BookCard extends StatelessWidget {
             height: 124,
             child: Row(
               children: [
-                _buildCover(),
+                BookCover(imageUrl: imageUrl),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -75,66 +81,18 @@ class BookCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 IconButtonDefault(
-                  icon: Icon(LucideIcons.plus),
-                  onPressed: () {},
-                  variant: ButtonVariant.primary,
+                  icon: Icon(isAdded ? LucideIcons.check : LucideIcons.plus),
+                  tooltip: isAdded ? 'Alterar status' : 'Adicionar à estante',
+                  onPressed: onPressedAdd,
+                  variant: isAdded
+                      ? ButtonVariant.transparent
+                      : ButtonVariant.primary,
                   size: ButtonSize.sm,
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCover() {
-    return Container(
-      width: 82,
-      height: 124,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: (imageUrl != null && imageUrl!.isNotEmpty)
-            ? Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return _coverPlaceholder(isLoading: true);
-                },
-                errorBuilder: (context, error, stackTrace) =>
-                    _coverPlaceholder(),
-              )
-            : _coverPlaceholder(),
-      ),
-    );
-  }
-
-  Widget _coverPlaceholder({bool isLoading = false}) {
-    return Container(
-      color: Colors.grey.shade100,
-      child: Center(
-        child: isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Icon(
-                Icons.menu_book_rounded,
-                size: 36,
-                color: Colors.grey.shade400,
-              ),
       ),
     );
   }

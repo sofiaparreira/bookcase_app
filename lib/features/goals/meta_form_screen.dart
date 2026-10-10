@@ -1,6 +1,7 @@
 // Tela: Formulário de Meta (criar/editar)
 // Integrante: Joao vitor kadus
 import 'package:flutter/material.dart';
+
 import 'meta_detalhe_screen.dart';
 
 class MetaFormScreen extends StatefulWidget {
@@ -91,7 +92,8 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
               ),
               validator: (v) {
                 final n = int.tryParse(v ?? '');
-                if (n == null || n <= 0) return 'Informe um número maior que zero';
+                if (n == null || n <= 0)
+                  return 'Informe um número maior que zero';
                 return null;
               },
             ),
