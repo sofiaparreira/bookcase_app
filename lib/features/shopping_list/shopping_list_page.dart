@@ -1,3 +1,5 @@
+// Tela feita por: Cauã de Moraes Furtado
+
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/shopping_list/shopping_list_service.dart';

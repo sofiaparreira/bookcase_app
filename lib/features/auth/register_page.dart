@@ -1,3 +1,5 @@
+// Tela feita por: Arthur Cândido Teixeira
+
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
