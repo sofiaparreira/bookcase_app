@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Bookcase.Api.Controllers;
 
@@ -84,5 +85,20 @@ public class AuthController : ControllerBase
             signingCredentials: credentials
         );
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    // GET api/auth/me
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> Me()
+    {
+        var userId = int.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")!
+        );
+
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return NotFound();
+
+        return Ok(new { user.Id, user.Name, user.Email, user.CreatedAt });
     }
 }
