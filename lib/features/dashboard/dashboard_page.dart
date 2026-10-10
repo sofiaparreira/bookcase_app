@@ -1,5 +1,6 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
+import 'package:bookcase/features/shopping_list/shopping_list_page.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/card/metric_card.dart';
@@ -221,7 +222,14 @@ class DashboardPage extends StatelessWidget {
                               text: 'Ver lista',
                               variant: ButtonVariant.transparent,
                               suffixIcon: const Icon(Icons.chevron_right),
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ShoppingListPage(),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
