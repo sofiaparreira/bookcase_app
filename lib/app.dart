@@ -1,3 +1,5 @@
+// Feito por: Sofia Parreira Passos
+
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/dashboard/dashboard_page.dart';
@@ -27,12 +29,21 @@ class _AppState extends State<App> {
   int searchPageKey = 0;
 
   List<Widget> get pages => [
-    const DashboardPage(),
+    DashboardPage(onNavigate: _selectPage),
     const MyBookshelfPage(),
     SearchBooksPage(key: ValueKey(searchPageKey)),
     const MetasScreen(),
     const ProfilePage(),
   ];
+
+  void _selectPage(int index) {
+    setState(() {
+      if (currentIndex == searchPageIndex && index != searchPageIndex) {
+        searchPageKey++;
+      }
+      currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,15 +80,7 @@ class _AppState extends State<App> {
             body: IndexedStack(index: currentIndex, children: pages),
             bottomNavigationBar: AppBottomNavigation(
               currentIndex: currentIndex,
-              onTap: (index) {
-                setState(() {
-                  if (currentIndex == searchPageIndex &&
-                      index != searchPageIndex) {
-                    searchPageKey++;
-                  }
-                  currentIndex = index;
-                });
-              },
+              onTap: _selectPage,
             ),
           ),
     );

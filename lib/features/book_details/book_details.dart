@@ -1,3 +1,5 @@
+// Feito por: Sofia Parreira Passos
+
 import 'dart:ui';
 
 import 'package:bookcase/core/theme/app_colors.dart';

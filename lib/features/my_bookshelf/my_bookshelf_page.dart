@@ -1,3 +1,5 @@
+// Feito por: Sofia Parreira Passos
+
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
