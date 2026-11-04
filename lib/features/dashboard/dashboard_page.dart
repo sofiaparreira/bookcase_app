@@ -2,13 +2,13 @@
 
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
+import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/features/shopping_list/shopping_list_page.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/card/metric_card.dart';
 import 'package:bookcase/shared/widgets/card/reading_card.dart';
-import 'package:bookcase/shared/widgets/modal/update_reading_progress_modal.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
 import 'package:bookcase/shared/widgets/text/title_h2.dart';
 import 'package:flutter/material.dart';
@@ -21,33 +21,6 @@ class DashboardPage extends StatelessWidget {
 
   // Quantidade de dias seguidos lendo (ofensiva)
   static const int streakDays = 7;
-
-  static const List<ReadingBook> readingBooksList = [
-    ReadingBook(
-      book: Book(
-        id: 1,
-        title: 'O Retrato de Dorian Gray',
-        author: 'Oscar Wilde',
-        isbn: '123123',
-        status: EnumBookStatus.reading,
-        totalPages: 300,
-        image: 'https://darkside.vtexassets.com/arquivos/ids/176888/o-retrato-de-dorian-gray.png?v=637655004354600000',
-      ),
-      currentPage: 100,
-    ),
-    ReadingBook(
-      book: Book(
-        id: 1,
-        title: 'O Retrato de Dorian Gray',
-        author: 'Oscar Wilde',
-        isbn: '123123',
-        status: EnumBookStatus.reading,
-        totalPages: 300,
-        image: 'https://darkside.vtexassets.com/arquivos/ids/176888/o-retrato-de-dorian-gray.png?v=637655004354600000',
-      ),
-      currentPage: 100,
-    ),
-  ];
 
   void _openShoppingList(BuildContext context) {
     Navigator.push(
@@ -147,34 +120,65 @@ class DashboardPage extends StatelessWidget {
                 ),
               ),
 
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                child: Row(
-                  spacing: 12,
-                  children: readingBooksList.map((readingBook) {
-                    return ReadingCard(
-                      title: readingBook.book.title,
-                      author: readingBook.book.author,
-                      currentPage: readingBook.currentPage,
-                      totalPages: readingBook.book.totalPages,
-                      progress: readingBook.progress,
-                      progressPercent: readingBook.progressPercent,
-                      imageUrl: readingBook.book.image,
-                      onUpdateProgress: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          builder: (context) {
-                            return UpdateReadingProgressModal(
-                              currentPage: readingBook.currentPage,
-                              totalPages: readingBook.book.totalPages,
-                            );
-                          },
+              SizedBox(
+                width: double.infinity,
+                child: ListenableBuilder(
+                  listenable: BookshelfStore.instance,
+                  builder: (context, _) {
+                    final readingBooks = BookshelfStore.instance
+                        .booksWithStatus(EnumBookStatus.reading);
+
+                    if (readingBooks.isEmpty) {
+                      if (BookshelfStore.instance.isLoadingFromApi) {
+                        return const SizedBox(
+                          height: 76,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          ),
                         );
-                      },
+                      }
+
+                      return const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 12, 20, 28),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Nenhum livro em andamento',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        spacing: 12,
+                        children: readingBooks.map((shelfBook) {
+                          return ReadingCard(
+                            key: ValueKey(shelfBook.book.id),
+                            title: shelfBook.book.title,
+                            author: shelfBook.book.author,
+                            currentPage: shelfBook.currentPage,
+                            totalPages: shelfBook.totalPages,
+                            progress: shelfBook.progress,
+                            progressPercent: shelfBook.progressPercent,
+                            imageUrl: shelfBook.book.image,
+                            onUpdateProgress: () =>
+                                BookshelfActions.editProgress(
+                                  context,
+                                  shelfBook,
+                                ),
+                          );
+                        }).toList(),
+                      ),
                     );
-                  }).toList(),
+                  },
                 ),
               ),
 

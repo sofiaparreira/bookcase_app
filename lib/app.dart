@@ -3,6 +3,7 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/dashboard/dashboard_page.dart';
+import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/features/my_bookshelf/my_bookshelf_page.dart';
 import 'package:bookcase/features/search_books/search_books_page.dart';
 import 'package:bookcase/shared/widgets/bottom_navigation.dart';
@@ -27,6 +28,20 @@ class _AppState extends State<App> {
   static const searchPageIndex = 2;
 
   int searchPageKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookshelf();
+  }
+
+  Future<void> _loadBookshelf() async {
+    try {
+      await BookshelfStore.instance.loadFromApi();
+    } catch (_) {
+      // O serviço registra detalhes da falha; a tela pode tentar novamente.
+    }
+  }
 
   List<Widget> get pages => [
     DashboardPage(onNavigate: _selectPage),

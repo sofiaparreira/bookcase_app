@@ -36,6 +36,18 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
   void initState() {
     super.initState();
     searchController.addListener(_onSearchChanged);
+    _loadBooksFromApi();
+  }
+
+  Future<void> _loadBooksFromApi() async {
+    try {
+      await store.loadFromApi();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível carregar sua estante.')),
+      );
+    }
   }
 
   @override
@@ -146,7 +158,11 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
                             ),
                           ),
                           Expanded(
-                            child: books.isEmpty
+                            child: books.isEmpty && store.isLoadingFromApi
+                                ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                : books.isEmpty
                                 ? _BookshelfEmptyState(
                                     status: selectedStatus,
                                     isSearching: searchController.text

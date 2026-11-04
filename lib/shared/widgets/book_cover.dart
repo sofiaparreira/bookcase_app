@@ -36,6 +36,7 @@ class BookCover extends StatelessWidget {
             ? Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
+                webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return _placeholder(isLoading: true);

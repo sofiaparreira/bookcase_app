@@ -3,6 +3,7 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
 import 'package:bookcase/features/auth/login_page.dart';
+import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/features/settings_page/change_password_page.dart';
 import 'package:bookcase/features/settings_page/edit_profile_page.dart';
 import 'package:bookcase/features/settings_page/info_page.dart';
@@ -72,7 +73,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (!confirmed || !mounted) return;
 
-    _authService.signOut();
+    await _authService.signOut();
+    BookshelfStore.instance.clear();
 
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),

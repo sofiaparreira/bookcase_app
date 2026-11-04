@@ -82,7 +82,9 @@ class ReadingCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Pág. $currentPage de $totalPages',
+                        totalPages > 0
+                            ? 'Pág. $currentPage de $totalPages'
+                            : '$progressPercent% concluído',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -143,6 +145,7 @@ class ReadingCard extends StatelessWidget {
             ? Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
+                webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return _coverPlaceholder(isLoading: true);

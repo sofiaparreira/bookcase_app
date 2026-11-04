@@ -2,11 +2,11 @@
 
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
-import 'package:bookcase/features/book_details/book_details.dart';
+import 'package:bookcase/features/book_details/book_details_page.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/models/book.dart';
-import 'package:bookcase/shared/service/open_library_service.dart';
+import 'package:bookcase/shared/service/google_books_service.dart';
 import 'package:bookcase/shared/widgets/card/book_card.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
 import 'package:bookcase/shared/widgets/text_field/search_text_field.dart';
@@ -21,11 +21,17 @@ class SearchBooksPage extends StatefulWidget {
 
 class _SearchBooksPageState extends State<SearchBooksPage> {
   final TextEditingController searchController = TextEditingController();
-  final OpenLibraryService openLibraryService = OpenLibraryService();
+  final GoogleBooksService googleBooksService = GoogleBooksService();
 
   List<Book> searchedBooks = [];
   bool hasSearched = false;
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    BookshelfStore.instance.loadFromApi().catchError((_) {});
+  }
 
   Future<void> searchBooks() async {
     final search = searchController.text.trim();
@@ -37,7 +43,7 @@ class _SearchBooksPageState extends State<SearchBooksPage> {
     });
 
     try {
-      final result = await openLibraryService.searchBooks(search);
+      final result = await googleBooksService.searchBooks(search);
       if (!mounted) return;
 
       setState(() {
@@ -153,7 +159,7 @@ class _SearchBooksPageState extends State<SearchBooksPage> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                const BookDetailsPage(),
+                                                BookDetailsPage(book: book),
                                           ),
                                         );
                                       },
