@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Bookcase.Api.Data;
 using Bookcase.Api.Models;
+using Bookcase.Api.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -33,6 +34,7 @@ public class ReadingGoalController : ControllerBase
     {
         var userId = GetUserId();
         var goals = await _context.ReadingGoals
+        .Include(goal => goal.Book)
         .Where(goal => goal.UserId == userId)
         .ToListAsync();
         return Ok(goals);
@@ -45,6 +47,10 @@ public class ReadingGoalController : ControllerBase
         var userId = GetUserId();
         goal.UserId = userId;
 
+        var bookExists = await _context.Books.AnyAsync(b => b.Id == goal.BookId && b.UserId == userId);
+        if (!bookExists) return BadRequest("Livro não encontrado.");
+        goal.CompletedAt = null;
+
         _context.ReadingGoals.Add(goal);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = goal.Id }, goal);
@@ -54,7 +60,9 @@ public class ReadingGoalController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var goal = await _context.ReadingGoals.FindAsync(id);
+        var goal = await _context.ReadingGoals
+            .Include(g => g.Book)
+            .FirstOrDefaultAsync(g => g.Id == id);
 
         if (goal == null || goal.UserId != GetUserId()) return NotFound();
 
@@ -67,17 +75,39 @@ public class ReadingGoalController : ControllerBase
     {
         if (id != goal.Id) return BadRequest();
 
+        var userId = GetUserId();
         var existingGoal = await _context.ReadingGoals.FindAsync(id);
-        if (existingGoal == null || existingGoal.UserId != GetUserId()) return NotFound();
+        if (existingGoal == null || existingGoal.UserId != userId) return NotFound();
+
+        if (!await UserOwnsBook(goal.BookId, userId)) return BadRequest("Livro não encontrado.");
+        if (goal.TargetPages <= 0) return BadRequest("Informe um número de páginas maior que zero.");
 
         existingGoal.Title = goal.Title;
-        existingGoal.TargetBooks = goal.TargetBooks;
-        existingGoal.CurrentBooks = goal.CurrentBooks;
+        existingGoal.BookId = goal.BookId;
+        existingGoal.TargetPages = goal.TargetPages;
+        existingGoal.CurrentPage = Math.Max(goal.CurrentPage, 0);
         existingGoal.StartDate = goal.StartDate;
         existingGoal.EndDate = goal.EndDate;
+        UpdateCompletion(existingGoal);
 
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+
+    // PATCH api/readinggoal/{id}/progress (Salva a página em que o usuário parou)
+    [HttpPatch("{id}/progress")]
+    public async Task<IActionResult> UpdateProgress(int id, UpdateGoalProgressDto dto)
+    {
+        if (dto.CurrentPage < 0) return BadRequest("A página não pode ser negativa.");
+
+        var goal = await _context.ReadingGoals.FindAsync(id);
+        if (goal == null || goal.UserId != GetUserId()) return NotFound();
+
+        goal.CurrentPage = dto.CurrentPage;
+        UpdateCompletion(goal);
+
+        await _context.SaveChangesAsync();
+        return Ok(goal);
     }
 
     // DELETE api/readinggoal/{id} (Deleta um objetivo de leitura específico pelo ID)
@@ -90,5 +120,16 @@ public class ReadingGoalController : ControllerBase
         _context.ReadingGoals.Remove(goal);
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+
+    private Task<bool> UserOwnsBook(int bookId, int userId) =>
+        _context.Books.AnyAsync(b => b.Id == bookId && b.UserId == userId);
+
+    private static void UpdateCompletion(ReadingGoal goal)
+    {
+        if (goal.CurrentPage >= goal.TargetPages)
+            goal.CompletedAt ??= DateTime.UtcNow;
+        else
+            goal.CompletedAt = null;
     }
 }

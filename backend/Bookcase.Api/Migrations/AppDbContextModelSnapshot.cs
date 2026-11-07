@@ -64,7 +64,13 @@ namespace Bookcase.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CurrentBooks")
+                    b.Property<int>("BookId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CurrentPage")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("EndDate")
@@ -73,7 +79,7 @@ namespace Bookcase.Api.Migrations
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("TargetBooks")
+                    b.Property<int>("TargetPages")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")
@@ -84,6 +90,8 @@ namespace Bookcase.Api.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BookId");
 
                     b.HasIndex("UserId");
 
@@ -162,11 +170,19 @@ namespace Bookcase.Api.Migrations
 
             modelBuilder.Entity("Bookcase.Api.Models.ReadingGoal", b =>
                 {
+                    b.HasOne("Bookcase.Api.Models.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Bookcase.Api.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Book");
 
                     b.Navigation("User");
                 });
