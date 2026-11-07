@@ -45,6 +45,7 @@ class ShelfBook {
 
 extension EnumBookStatusLabel on EnumBookStatus {
   String get label => switch (this) {
+    EnumBookStatus.none => 'Sem status',
     EnumBookStatus.want => 'Quero ler',
     EnumBookStatus.reading => 'Lendo',
     EnumBookStatus.finished => 'Lido',

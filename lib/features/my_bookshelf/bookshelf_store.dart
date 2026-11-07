@@ -23,10 +23,10 @@ class BookshelfStore extends ChangeNotifier {
   bool isLoadingFromApi = false;
   String? _loadedForToken;
 
-  Future<void> loadFromApi() async {
+  Future<void> loadFromApi({bool refresh = false}) async {
     final token = AuthService().token;
     if (isLoadingFromApi || token == null || token.isEmpty) return;
-    if (_loadedForToken == token) return;
+    if (!refresh && _loadedForToken == token) return;
 
     isLoadingFromApi = true;
     notifyListeners();
@@ -60,7 +60,12 @@ class BookshelfStore extends ChangeNotifier {
         }
 
         final displayBook =
-            previous?.book.copyWith(databaseId: apiBook.databaseId) ?? apiBook;
+            previous?.book.copyWith(
+              databaseId: apiBook.databaseId,
+              status: apiBook.status,
+              rating: apiBook.rating,
+            ) ??
+            apiBook;
         final savedBookProgress = savedProgress[apiBook.databaseId.toString()];
         final savedProgressValue = savedBookProgress is Map
             ? _numberAsDouble(savedBookProgress['progress'])
@@ -75,7 +80,7 @@ class BookshelfStore extends ChangeNotifier {
           totalPages: previous != null && previous.totalPages > 0
               ? previous.totalPages
               : savedTotalPages ?? apiBook.totalPages,
-          rating: previous?.rating,
+          rating: apiBook.rating > 0 ? apiBook.rating.round() : null,
           finishedAt: previous?.finishedAt,
         );
         _books[displayBook.id] = savedShelfBook;
@@ -123,7 +128,10 @@ class BookshelfStore extends ChangeNotifier {
     return null;
   }
 
-  bool contains(Book book) => find(book) != null;
+  bool contains(Book book) {
+    final shelfBook = find(book);
+    return shelfBook != null && shelfBook.status != EnumBookStatus.none;
+  }
 
   void save(ShelfBook shelfBook) {
     final existingIds = _books.entries

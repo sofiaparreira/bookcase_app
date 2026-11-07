@@ -10,6 +10,7 @@ class BookStatusService {
   Future<Book> updateStatusBook({
     required Book book,
     required EnumBookStatus status,
+    double? rating,
   }) async {
     final token = AuthService().token;
     if (token == null || token.isEmpty) {
@@ -21,7 +22,7 @@ class BookStatusService {
     final url = databaseId == null
         ? Uri.parse('${ApiConfig.baseUrl}/api/book')
         : Uri.parse('${ApiConfig.baseUrl}/api/book/$databaseId');
-    final payload = book.toApiJson(status: status);
+    final payload = book.toApiJson(status: status, rating: rating);
     if (databaseId != null) payload['id'] = databaseId;
 
     final headers = {
@@ -56,11 +57,15 @@ class BookStatusService {
           throw Exception('A API não retornou o ID do livro criado.');
         }
 
-        return book.copyWith(databaseId: savedId);
+        return book.copyWith(
+          databaseId: savedId,
+          status: status,
+          rating: rating,
+        );
       }
 
       if (databaseId != null && response.statusCode == 204) {
-        return book;
+        return book.copyWith(status: status, rating: rating);
       }
 
       throw Exception(
@@ -71,6 +76,26 @@ class BookStatusService {
       debugPrint('[BookStatusService] request failed: $error');
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
+    }
+  }
+
+  Future<void> deleteBook(Book book) async {
+    final token = AuthService().token;
+    if (token == null || token.isEmpty) {
+      throw Exception('Faça login antes de remover o livro.');
+    }
+    final databaseId = book.databaseId;
+    if (databaseId == null) {
+      throw Exception('O livro não possui um ID válido no banco.');
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/book/$databaseId');
+    final response = await http.delete(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 204) {
+      throw Exception('Falha ao remover o livro (${response.statusCode}).');
     }
   }
 

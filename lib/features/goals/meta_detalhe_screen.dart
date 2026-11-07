@@ -1,5 +1,6 @@
 // Feito por: João e Sofia Parreira Passos
 
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
@@ -43,9 +44,7 @@ class MetaDetalheScreen extends StatelessWidget {
     );
 
     if (!confirmed || !context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Exclusão na próxima etapa')));
+    AppAlert.info(context, 'Exclusão na próxima etapa');
   }
 
   @override

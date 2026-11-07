@@ -15,6 +15,22 @@ Future<bool> showConfirmDialog(
     builder: (ctx) => AlertDialog(
       backgroundColor: AppColors.background,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      icon: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: (destructive ? AppColors.danger : AppColors.primary)
+              .withValues(alpha: 0.10),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          destructive
+              ? Icons.delete_outline_rounded
+              : Icons.help_outline_rounded,
+          color: destructive ? AppColors.danger : AppColors.primary,
+          size: 26,
+        ),
+      ),
       title: Text(
         title,
         style: const TextStyle(
@@ -33,10 +49,11 @@ Future<bool> showConfirmDialog(
           style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
           child: Text(cancelText),
         ),
-        TextButton(
+        FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
-          style: TextButton.styleFrom(
-            foregroundColor: destructive ? AppColors.danger : AppColors.primary,
+          style: FilledButton.styleFrom(
+            backgroundColor: destructive ? AppColors.danger : AppColors.primary,
+            foregroundColor: Colors.white,
             textStyle: const TextStyle(fontWeight: FontWeight.w700),
           ),
           child: Text(confirmText),

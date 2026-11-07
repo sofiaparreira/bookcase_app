@@ -42,9 +42,7 @@ class _UpdateReadingProgressModalState
   ProgressType selectedType = ProgressType.pages;
   late final TextEditingController pageController;
   late final TextEditingController percentageController;
-  int? editedTotalPages;
-
-  int get totalPages => editedTotalPages ?? widget.totalPages ?? 0;
+  int get totalPages => widget.totalPages ?? 0;
 
   @override
   void initState() {
@@ -81,19 +79,6 @@ class _UpdateReadingProgressModalState
   }
 
   int get _progressPercent => (_progress * 100).clamp(0, 100).round();
-
-  Future<void> _editTotalPages() async {
-    final updatedTotal = await showDialog<int>(
-      context: context,
-      builder: (context) => _EditTotalPagesDialog(totalPages: totalPages),
-    );
-
-    if (updatedTotal == null || !mounted) return;
-
-    setState(() {
-      editedTotalPages = updatedTotal;
-    });
-  }
 
   void _updateProgress() {
     if (mounted) setState(() {});
@@ -247,32 +232,12 @@ class _UpdateReadingProgressModalState
                 ),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "$totalPages páginas no total",
-                        style: const TextStyle(
-                          color: AppColors.secondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        key: const Key('edit-total-pages-button'),
-                        tooltip: 'Editar total de páginas',
-                        onPressed: _editTotalPages,
-                        style: IconButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          minimumSize: const Size.square(32),
-                          padding: const EdgeInsets.all(6),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: AppDecorations.buttonBorderRadius,
-                          ),
-                        ),
-                        icon: const Icon(Icons.edit_rounded, size: 17),
-                      ),
-                    ],
+                  child: Text(
+                    "$totalPages páginas no total",
+                    style: const TextStyle(
+                      color: AppColors.secondary,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
                 ButtonDefault(
@@ -416,86 +381,6 @@ class _UpdateReadingProgressModalState
           ),
         ),
       ),
-    );
-  }
-}
-
-class _EditTotalPagesDialog extends StatefulWidget {
-  final int totalPages;
-
-  const _EditTotalPagesDialog({required this.totalPages});
-
-  @override
-  State<_EditTotalPagesDialog> createState() => _EditTotalPagesDialogState();
-}
-
-class _EditTotalPagesDialogState extends State<_EditTotalPagesDialog> {
-  late final TextEditingController controller;
-  String? errorText;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = TextEditingController(text: widget.totalPages.toString());
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  void save() {
-    final totalPages = int.tryParse(controller.text);
-
-    if (totalPages == null || totalPages <= 0) {
-      setState(() {
-        errorText = 'Informe um número de páginas válido.';
-      });
-      return;
-    }
-
-    Navigator.pop(context, totalPages);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Editar total de páginas'),
-      content: TextField(
-        key: const Key('total-pages-field'),
-        controller: controller,
-        autofocus: true,
-        keyboardType: TextInputType.number,
-        onSubmitted: (_) => save(),
-        decoration: InputDecoration(
-          labelText: 'Total de páginas',
-          errorText: errorText,
-          border: OutlineInputBorder(
-            borderRadius: AppDecorations.buttonBorderRadius,
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          style: TextButton.styleFrom(
-            shape: const RoundedRectangleBorder(
-              borderRadius: AppDecorations.buttonBorderRadius,
-            ),
-          ),
-          child: const Text('Cancelar'),
-        ),
-        TextButton(
-          onPressed: save,
-          style: TextButton.styleFrom(
-            shape: const RoundedRectangleBorder(
-              borderRadius: AppDecorations.buttonBorderRadius,
-            ),
-          ),
-          child: const Text('Salvar'),
-        ),
-      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 // Tela feita por: Maria Luiza Bertolino Matos
 
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/models/shelf_book.dart';
@@ -28,7 +29,9 @@ class BookshelfActions {
 
     try {
       final bool saved;
-      if (status == EnumBookStatus.reading) {
+      if (status == EnumBookStatus.none) {
+        saved = await _removeFromBookshelf(book);
+      } else if (status == EnumBookStatus.reading) {
         saved = await startReading(context, book);
       } else if (status == EnumBookStatus.finished) {
         saved = await finishReading(context, book);
@@ -37,18 +40,38 @@ class BookshelfActions {
       }
 
       if (saved && context.mounted) {
-        _showMessage(context, '"${book.title}" está em ${status.label}');
+        _showMessage(
+          context,
+          status == EnumBookStatus.none
+              ? '"${book.title}" foi removido da sua estante.'
+              : '"${book.title}" está em ${status.label}',
+        );
       }
     } catch (_) {
       if (context.mounted) {
-        _showMessage(context, 'Não foi possível salvar o livro na API.');
+        AppAlert.error(
+          context,
+          status == EnumBookStatus.none
+              ? 'Não foi possível remover o livro. Tente novamente.'
+              : 'Não foi possível salvar o livro na API.',
+        );
       }
     }
   }
 
+  static Future<bool> _removeFromBookshelf(Book book) async {
+    final current = _store.find(book);
+    if (current == null || current.status == EnumBookStatus.none) return false;
+
+    await _statusService.deleteBook(current.book);
+    _store.remove(current.book);
+    await _store.persistProgress();
+    return true;
+  }
+
   static Future<bool> _saveAsWant(Book book) async {
     final current = _store.find(book);
-    final bookToSave = current?.book ?? book;
+    final bookToSave = current?.book ?? book.copyWith(databaseId: null);
     final apiBook = await _statusService.updateStatusBook(
       book: bookToSave,
       status: EnumBookStatus.want,
@@ -74,7 +97,7 @@ class BookshelfActions {
     if (result == null) return false;
 
     final apiBook = await _statusService.updateStatusBook(
-      book: current?.book ?? book,
+      book: current?.book ?? book.copyWith(databaseId: null),
       status: EnumBookStatus.reading,
     );
     final displayBook = book.copyWith(databaseId: apiBook.databaseId);
@@ -128,10 +151,15 @@ class BookshelfActions {
     if (result == null) return false;
 
     final apiBook = await _statusService.updateStatusBook(
-      book: current?.book ?? book,
+      book: current?.book ?? book.copyWith(databaseId: null),
       status: EnumBookStatus.finished,
+      rating: result.rating.toDouble(),
     );
-    final displayBook = book.copyWith(databaseId: apiBook.databaseId);
+    final displayBook = book.copyWith(
+      databaseId: apiBook.databaseId,
+      status: EnumBookStatus.finished,
+      rating: result.rating.toDouble(),
+    );
     _store.save(
       ShelfBook(
         book: displayBook,
@@ -173,8 +201,6 @@ class BookshelfActions {
   }
 
   static void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppAlert.success(context, message);
   }
 }

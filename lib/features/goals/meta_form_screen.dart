@@ -1,5 +1,6 @@
 // Feito por: João e Sofia Parreira Passos
 
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/sub_page_layout.dart';
@@ -88,9 +89,7 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
   void _salvar() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Meta salva! (API na próxima etapa)')),
-    );
+    AppAlert.info(context, 'Meta salva! (API na próxima etapa)');
     Navigator.pop(context);
   }
 

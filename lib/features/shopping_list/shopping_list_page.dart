@@ -1,10 +1,12 @@
 // Tela feita por: Cauã de Moraes Furtado e Sofia Parreira Passos
 
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/core/theme/app_shadow.dart';
 import 'package:bookcase/features/shopping_list/shopping_list_service.dart';
 import 'package:bookcase/models/shopping_list_item.dart';
+import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/bottom_navigation.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
@@ -15,8 +17,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class ShoppingListPage extends StatefulWidget {
   final ValueChanged<int>? onNavigate;
+  final Book? initialBook;
 
-  const ShoppingListPage({super.key, this.onNavigate});
+  const ShoppingListPage({super.key, this.onNavigate, this.initialBook});
 
   @override
   State<ShoppingListPage> createState() => _ShoppingListPageState();
@@ -38,6 +41,11 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
   void initState() {
     super.initState();
     loadItems();
+    if (widget.initialBook != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openForm(initialBook: widget.initialBook);
+      });
+    }
   }
 
   String _formatPrice(double price) {
@@ -49,11 +57,18 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     if (Navigator.canPop(context)) Navigator.pop(context);
   }
 
-  Future<void> _openForm({ShoppingListItem? existing}) async {
+  Future<void> _openForm({
+    ShoppingListItem? existing,
+    Book? initialBook,
+  }) async {
     final isEditing = existing != null;
     final formKey = GlobalKey<FormState>();
-    final titleCtrl = TextEditingController(text: existing?.title ?? '');
-    final authorCtrl = TextEditingController(text: existing?.author ?? '');
+    final titleCtrl = TextEditingController(
+      text: existing?.title ?? initialBook?.title ?? '',
+    );
+    final authorCtrl = TextEditingController(
+      text: existing?.author ?? initialBook?.author ?? '',
+    );
     final priceCtrl = TextEditingController(
       text: existing != null ? existing.price.toStringAsFixed(2) : '',
     );
@@ -186,8 +201,9 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                         } catch (error) {
                           if (sheetContext.mounted) {
                             setModalState(() => isSaving = false);
-                            ScaffoldMessenger.of(sheetContext).showSnackBar(
-                              SnackBar(content: Text('Erro ao salvar: $error')),
+                            AppAlert.error(
+                              sheetContext,
+                              'Erro ao salvar: $error',
                             );
                           }
                         }
@@ -215,9 +231,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
       setState(() => items = result);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao carregar a lista: $error')),
-      );
+      AppAlert.error(context, 'Erro ao carregar a lista: $error');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -237,8 +251,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
       await loadItems();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erro ao atualizar: $error')));
+        AppAlert.error(context, 'Erro ao atualizar: $error');
       }
     }
   }
@@ -258,8 +271,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
       await loadItems();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erro ao excluir: $error')));
+        AppAlert.error(context, 'Erro ao excluir: $error');
       }
     }
   }

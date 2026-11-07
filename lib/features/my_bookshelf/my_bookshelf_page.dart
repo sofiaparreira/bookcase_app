@@ -1,5 +1,6 @@
 // Feito por: Sofia Parreira Passos
 
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
@@ -44,9 +45,7 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
       await store.loadFromApi();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível carregar sua estante.')),
-      );
+      AppAlert.error(context, 'Não foi possível carregar sua estante.');
     }
   }
 
@@ -240,6 +239,7 @@ class _BookshelfEmptyState extends StatelessWidget {
             EnumBookStatus.reading => 'Nenhuma leitura em andamento',
             EnumBookStatus.want => 'Sua lista de desejos está vazia',
             EnumBookStatus.finished => 'Nenhum livro lido ainda',
+            EnumBookStatus.none => 'Nenhum livro sem status',
           };
 
     return Center(

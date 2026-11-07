@@ -11,6 +11,7 @@ class Book {
   final String? description;
   final double? averageRating;
   final int? databaseId;
+  final double rating;
 
   const Book({
     required this.id,
@@ -24,10 +25,18 @@ class Book {
     this.description,
     this.averageRating,
     this.databaseId,
+    this.rating = 0,
   });
 
-  Book copyWith({int? databaseId, EnumBookStatus? status}) => Book(
+  static const _unchangedDatabaseId = Object();
+
+  Book copyWith({
+    Object? databaseId = _unchangedDatabaseId,
+    EnumBookStatus? status,
+    double? rating,
+  }) => Book(
     id: id,
+    rating: rating ?? this.rating,
     title: title,
     author: author,
     isbn: isbn,
@@ -37,7 +46,9 @@ class Book {
     googleBooksId: googleBooksId,
     description: description,
     averageRating: averageRating,
-    databaseId: databaseId ?? this.databaseId,
+    databaseId: identical(databaseId, _unchangedDatabaseId)
+        ? this.databaseId
+        : databaseId as int?,
   );
 
   /// Combina os dados persistidos pela API com metadados de uma fonte externa.
@@ -46,6 +57,7 @@ class Book {
   /// substituídos pelo status padrão usado nos resultados do Google Books.
   Book withExternalMetadata(Book metadata) => Book(
     id: metadata.id,
+    rating: rating,
     title: title,
     author: author,
     isbn: metadata.isbn,
@@ -58,7 +70,8 @@ class Book {
     databaseId: databaseId,
   );
 
-  Map<String, dynamic> toApiJson({EnumBookStatus? status}) => {
+  Map<String, dynamic> toApiJson({EnumBookStatus? status, double? rating}) => {
+    'rating': rating ?? this.rating,
     'title': title,
     'author': author,
     'description': description,
@@ -105,7 +118,7 @@ class Book {
           ? authors.first as String? ?? 'Autor desconhecido'
           : 'Autor desconhecido',
       isbn: isbnIdentifier?['identifier'] as String? ?? '',
-      status: EnumBookStatus.want,
+      status: EnumBookStatus.none,
       totalPages: totalPages,
       image: _secureImageUrl(image as String?),
       description: description,
@@ -128,6 +141,7 @@ class Book {
 
     return Book(
       id: databaseId,
+      rating: ((json['rating'] ?? json['Rating']) as num?)?.toDouble() ?? 0,
       databaseId: databaseId,
       title:
           json['title'] as String? ?? json['Title'] as String? ?? 'Sem título',
@@ -157,7 +171,8 @@ class Book {
 enum EnumBookStatus {
   want(0),
   reading(1),
-  finished(2);
+  finished(2),
+  none(3);
 
   const EnumBookStatus(this.apiValue);
 
@@ -172,6 +187,7 @@ enum EnumBookStatus {
               'notstarted' || 'want' => 0,
               'inprogress' || 'reading' => 1,
               'completed' || 'finished' => 2,
+              'none' => 3,
               _ => null,
             },
       _ => null,
@@ -181,6 +197,7 @@ enum EnumBookStatus {
       0 => EnumBookStatus.want,
       1 => EnumBookStatus.reading,
       2 => EnumBookStatus.finished,
+      3 => EnumBookStatus.none,
       _ => throw FormatException('Status de livro inválido: $value'),
     };
   }
