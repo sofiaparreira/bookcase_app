@@ -1,55 +1,63 @@
 // Feito por: João e Sofia Parreira Passos
-
+// Tela: Detalhe da Meta
+import 'package:bookcase/features/goals/goal_utils.dart';
+import 'package:bookcase/features/goals/goals_service.dart';
+import 'package:bookcase/features/goals/meta_form_screen.dart';
+import 'package:bookcase/models/reading_goal.dart';
 import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
 import 'package:bookcase/shared/widgets/sub_page_layout.dart';
-import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter/material.dart';
 
-import 'meta_form_screen.dart';
+class MetaDetalheScreen extends StatefulWidget {
+  final ReadingGoal goal;
 
-class MetaItem {
-  final String titulo;
-  final String tipo;
-  final int atual;
-  final int total;
-  final String prazo;
+  const MetaDetalheScreen({super.key, required this.goal});
 
-  const MetaItem({
-    required this.titulo,
-    required this.tipo,
-    required this.atual,
-    required this.total,
-    required this.prazo,
-  });
-
-  double get progresso => atual / total;
+  @override
+  State<MetaDetalheScreen> createState() => _MetaDetalheScreenState();
 }
 
-class MetaDetalheScreen extends StatelessWidget {
-  final MetaItem meta;
+class _MetaDetalheScreenState extends State<MetaDetalheScreen> {
+  final _service = GoalsService();
+  bool _deleting = false;
 
-  const MetaDetalheScreen({super.key, required this.meta});
+  Future<void> _edit() async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => MetaFormScreen(goal: widget.goal)),
+    );
+    if (changed == true && mounted) Navigator.pop(context, true);
+  }
 
-  Future<void> _deleteGoal(BuildContext context) async {
-    final confirmed = await showConfirmDialog(
+  Future<void> _delete() async {
+    final confirm = await showConfirmDialog(
       context,
       title: 'Excluir meta?',
-      message: 'Essa ação removerá “${meta.titulo}” das suas metas.',
+      message: 'Essa ação removerá “${widget.goal.title}” das suas metas.',
       confirmText: 'Excluir',
       destructive: true,
     );
+    if (!confirm || !mounted) return;
 
-    if (!confirmed || !context.mounted) return;
-    AppAlert.info(context, 'Exclusão na próxima etapa');
+    setState(() => _deleting = true);
+    try {
+      await _service.deleteGoal(widget.goal.id!);
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      AppAlert.error(context, cleanError(e));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final progress = meta.progresso.clamp(0.0, 1.0);
+    final progress = widget.goal.progress.clamp(0.0, 1.0);
     final percentage = (progress * 100).round();
     final isComplete = progress >= 1;
 
@@ -83,9 +91,7 @@ class MetaDetalheScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               child: Icon(
-                                meta.tipo == 'livros'
-                                    ? LucideIcons.bookOpen
-                                    : LucideIcons.fileText,
+                                LucideIcons.bookOpen,
                                 size: 25,
                                 color: isComplete
                                     ? AppColors.secondary
@@ -121,7 +127,7 @@ class MetaDetalheScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 9),
                                   Text(
-                                    meta.titulo,
+                                    widget.goal.title,
                                     style: const TextStyle(
                                       color: AppColors.textPrimary,
                                       fontSize: 20,
@@ -152,7 +158,7 @@ class MetaDetalheScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${meta.atual} de ${meta.total} ${meta.tipo}',
+                                    '${widget.goal.currentBooks} de ${widget.goal.targetBooks} livros',
                                     style: const TextStyle(
                                       color: AppColors.textPrimary,
                                       fontSize: 15,
@@ -200,7 +206,7 @@ class MetaDetalheScreen extends StatelessWidget {
                         _DetailRow(
                           icon: LucideIcons.layers3,
                           label: 'Tipo da meta',
-                          value: meta.tipo == 'livros' ? 'Livros' : 'Páginas',
+                          value: 'Livros',
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 14),
@@ -212,7 +218,7 @@ class MetaDetalheScreen extends StatelessWidget {
                         _DetailRow(
                           icon: LucideIcons.calendarDays,
                           label: 'Prazo',
-                          value: meta.prazo,
+                          value: formatDate(widget.goal.endDate),
                         ),
                       ],
                     ),
@@ -241,7 +247,8 @@ class MetaDetalheScreen extends StatelessWidget {
                         size: 18,
                         color: AppColors.danger,
                       ),
-                      onPressed: () => _deleteGoal(context),
+                      isLoading: _deleting,
+                      onPressed: _deleting ? null : _delete,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -250,14 +257,7 @@ class MetaDetalheScreen extends StatelessWidget {
                       text: 'Editar',
                       size: ButtonSize.lg,
                       prefixIcon: const Icon(LucideIcons.pencil, size: 18),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MetaFormScreen(meta: meta),
-                          ),
-                        );
-                      },
+                      onPressed: _deleting ? null : _edit,
                     ),
                   ),
                 ],
