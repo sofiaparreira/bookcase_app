@@ -21,6 +21,7 @@ class BookshelfStore extends ChangeNotifier {
   final GoogleBooksService _googleBooksService = GoogleBooksService();
   Timer? _progressSaveTimer;
   bool isLoadingFromApi = false;
+  bool isLoadingStatus = false;
   String? _loadedForToken;
 
   Future<void> loadFromApi({bool refresh = false}) async {
@@ -41,55 +42,92 @@ class BookshelfStore extends ChangeNotifier {
       _books.clear();
 
       for (final apiBook in enrichedApiBooks) {
-        ShelfBook? previous;
-        for (final item in previousBooks) {
-          final sameDatabaseId =
-              apiBook.databaseId != null &&
-              item.book.databaseId == apiBook.databaseId;
-          final sameTitle =
-              _normalize(item.book.title) == _normalize(apiBook.title);
-          final sameTitleAndAuthor =
-              sameTitle &&
-              (_normalize(item.book.author).isEmpty ||
-                  _normalize(apiBook.author).isEmpty ||
-                  _normalize(item.book.author) == _normalize(apiBook.author));
-          if (sameDatabaseId || sameTitleAndAuthor) {
-            previous = item;
-            break;
-          }
-        }
-
-        final displayBook =
-            previous?.book.copyWith(
-              databaseId: apiBook.databaseId,
-              status: apiBook.status,
-              rating: apiBook.rating,
-            ) ??
-            apiBook;
-        final savedBookProgress = savedProgress[apiBook.databaseId.toString()];
-        final savedProgressValue = savedBookProgress is Map
-            ? _numberAsDouble(savedBookProgress['progress'])
-            : null;
-        final savedTotalPages = savedBookProgress is Map
-            ? _numberAsInt(savedBookProgress['totalPages'])
-            : null;
-        final savedShelfBook = ShelfBook(
-          book: displayBook,
-          status: apiBook.status,
-          progress: previous?.progress ?? savedProgressValue ?? 0,
-          totalPages: previous != null && previous.totalPages > 0
-              ? previous.totalPages
-              : savedTotalPages ?? apiBook.totalPages,
-          rating: apiBook.rating > 0 ? apiBook.rating.round() : null,
-          finishedAt: previous?.finishedAt,
-        );
-        _books[displayBook.id] = savedShelfBook;
+        _mergeApiBook(apiBook, previousBooks, savedProgress);
       }
       _loadedForToken = token;
     } finally {
       isLoadingFromApi = false;
       notifyListeners();
     }
+  }
+
+  /// Carrega do backend apenas os livros com o [status] informado,
+  /// atualizando o cache local para aquele status sem apagar os demais.
+  Future<void> loadByStatus(EnumBookStatus status, {bool refresh = false}) async {
+    final token = AuthService().token;
+    if (isLoadingStatus || token == null || token.isEmpty) return;
+
+    isLoadingStatus = true;
+    notifyListeners();
+
+    try {
+      final apiBooks = await _statusService.getBooksForCurrentUser(status: status);
+      final enrichedApiBooks = await Future.wait(
+        apiBooks.map(_restoreGoogleBookData),
+      );
+      final savedProgress = await _readSavedProgress();
+      final previousBooks = _books.values.toList();
+
+      // Remove do cache local todos os livros que possuíam esse status
+      _books.removeWhere((_, shelfBook) => shelfBook.status == status);
+
+      for (final apiBook in enrichedApiBooks) {
+        _mergeApiBook(apiBook, previousBooks, savedProgress);
+      }
+    } finally {
+      isLoadingStatus = false;
+      notifyListeners();
+    }
+  }
+
+  void _mergeApiBook(
+    Book apiBook,
+    List<ShelfBook> previousBooks,
+    Map<String, dynamic> savedProgress,
+  ) {
+    ShelfBook? previous;
+    for (final item in previousBooks) {
+      final sameDatabaseId =
+          apiBook.databaseId != null &&
+          item.book.databaseId == apiBook.databaseId;
+      final sameTitle =
+          _normalize(item.book.title) == _normalize(apiBook.title);
+      final sameTitleAndAuthor =
+          sameTitle &&
+          (_normalize(item.book.author).isEmpty ||
+              _normalize(apiBook.author).isEmpty ||
+              _normalize(item.book.author) == _normalize(apiBook.author));
+      if (sameDatabaseId || sameTitleAndAuthor) {
+        previous = item;
+        break;
+      }
+    }
+
+    final displayBook =
+        previous?.book.copyWith(
+          databaseId: apiBook.databaseId,
+          status: apiBook.status,
+          rating: apiBook.rating,
+        ) ??
+        apiBook;
+    final savedBookProgress = savedProgress[apiBook.databaseId.toString()];
+    final savedProgressValue = savedBookProgress is Map
+        ? _numberAsDouble(savedBookProgress['progress'])
+        : null;
+    final savedTotalPages = savedBookProgress is Map
+        ? _numberAsInt(savedBookProgress['totalPages'])
+        : null;
+    final savedShelfBook = ShelfBook(
+      book: displayBook,
+      status: apiBook.status,
+      progress: previous?.progress ?? savedProgressValue ?? 0,
+      totalPages: previous != null && previous.totalPages > 0
+          ? previous.totalPages
+          : savedTotalPages ?? apiBook.totalPages,
+      rating: apiBook.rating > 0 ? apiBook.rating.round() : null,
+      finishedAt: previous?.finishedAt,
+    );
+    _books[displayBook.id] = savedShelfBook;
   }
 
   List<ShelfBook> booksWithStatus(EnumBookStatus status) => _books.values

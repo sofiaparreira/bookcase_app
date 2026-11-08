@@ -99,13 +99,18 @@ class BookStatusService {
     }
   }
 
-  Future<List<Book>> getBooksForCurrentUser() async {
+  Future<List<Book>> getBooksForCurrentUser({EnumBookStatus? status}) async {
     final token = AuthService().token;
     if (token == null || token.isEmpty) {
       throw Exception('Faça login antes de carregar os livros.');
     }
 
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/book');
+    final baseUrl = Uri.parse('${ApiConfig.baseUrl}/api/book');
+    final url = status != null && status != EnumBookStatus.none
+        ? baseUrl.replace(
+            queryParameters: {'status': status.apiValue.toString()},
+          )
+        : baseUrl;
     final headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
