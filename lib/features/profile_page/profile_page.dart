@@ -3,6 +3,7 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
+import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/features/settings_page/settings_page.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
@@ -19,32 +20,36 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final _authService = AuthService();
   final _bookshelf = BookshelfStore.instance;
+  final _streak = StreakStore.instance;
 
   // Valores mockados até existirem endpoints para eles
   static const _level = 'Leitor Bronze';
   static const _pagesRead = '1.552';
   static const _achievements = 3;
-  static const _streakDays = 7;
 
   AuthUser? _user;
 
   int get _booksRead => _bookshelf.countWithStatus(EnumBookStatus.finished);
 
+  int get _streakDays => _streak.currentStreak;
+
   @override
   void initState() {
     super.initState();
     _user = _authService.currentUser;
-    _bookshelf.addListener(_onBookshelfChanged);
+    _bookshelf.addListener(_onStoreChanged);
+    _streak.addListener(_onStoreChanged);
     _loadProfile();
   }
 
   @override
   void dispose() {
-    _bookshelf.removeListener(_onBookshelfChanged);
+    _bookshelf.removeListener(_onStoreChanged);
+    _streak.removeListener(_onStoreChanged);
     super.dispose();
   }
 
-  void _onBookshelfChanged() => setState(() {});
+  void _onStoreChanged() => setState(() {});
 
   Future<void> _loadProfile() async {
     if (!_authService.isAuthenticated) return;
@@ -190,7 +195,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           color: AppColors.secondary,
                         ),
                         Text(
-                          '$_streakDays dias consecutivos',
+                          _streakDays == 1
+                              ? '1 dia consecutivo'
+                              : '$_streakDays dias consecutivos',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,

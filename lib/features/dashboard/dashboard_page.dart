@@ -5,11 +5,13 @@ import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/features/shopping_list/shopping_list_page.dart';
+import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/shared/widgets/card/metric_card.dart';
 import 'package:bookcase/shared/widgets/card/reading_card.dart';
+import 'package:bookcase/shared/widgets/card/streak_card.dart';
 import 'package:bookcase/shared/widgets/text/title_h2.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -46,9 +48,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // Quantidade de dias seguidos lendo (ofensiva)
-  static const int streakDays = 7;
-
   void _openShoppingList(BuildContext context) {
     Navigator.push(
       context,
@@ -78,47 +77,16 @@ class _DashboardPageState extends State<DashboardPage> {
                   horizontal: 20,
                   vertical: 10,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Estante',
-                      style: GoogleFonts.dmSerifDisplay(
-                        color: Colors.white,
-                        fontSize: 36,
-                        letterSpacing: -0.8,
-                      ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Estante',
+                    style: GoogleFonts.dmSerifDisplay(
+                      color: Colors.white,
+                      fontSize: 36,
+                      letterSpacing: -0.8,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.white15,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.local_fire_department_rounded,
-                            color: AppColors.secondary,
-                            size: 22,
-                          ),
-                          SizedBox(width: 5),
-                          Text(
-                            '$streakDays dias',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
 
@@ -129,6 +97,17 @@ class _DashboardPageState extends State<DashboardPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
                       children: [
+                        // STREAK DA SEMANA
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                          child: ListenableBuilder(
+                            listenable: StreakStore.instance,
+                            builder: (context, _) => StreakCard(
+                              streakDays: StreakStore.instance.currentStreak,
+                              completedDays: StreakStore.instance.weekActivity,
+                            ),
+                          ),
+                        ),
                         SizedBox(
                           width: double.infinity,
                           child: ListenableBuilder(

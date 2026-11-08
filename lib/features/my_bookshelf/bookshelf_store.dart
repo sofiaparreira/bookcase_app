@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/models/shelf_book.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
@@ -12,9 +13,11 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BookshelfStore extends ChangeNotifier {
-  BookshelfStore._();
+  BookshelfStore._(this._streak);
 
-  static final BookshelfStore instance = BookshelfStore._();
+  static final BookshelfStore instance = BookshelfStore._(StreakStore.instance);
+
+  final StreakStore _streak;
 
   final Map<int, ShelfBook> _books = {};
   final BookStatusService _statusService = BookStatusService();
@@ -191,10 +194,12 @@ class BookshelfStore extends ChangeNotifier {
         })
         .map((entry) => entry.key)
         .toList();
+    final previous = existingIds.isEmpty ? null : _books[existingIds.first];
     for (final id in existingIds) {
       _books.remove(id);
     }
     _books[shelfBook.book.id] = shelfBook;
+    _registerStreakIfActive(previous, shelfBook);
     notifyListeners();
     _scheduleProgressPersistence();
   }
@@ -210,7 +215,9 @@ class BookshelfStore extends ChangeNotifier {
     final shelfBook = _books[book.id];
     if (shelfBook == null) return;
 
-    _books[book.id] = shelfBook.copyWith(progress: progress.clamp(0.0, 1.0));
+    final updated = shelfBook.copyWith(progress: progress.clamp(0.0, 1.0));
+    _books[book.id] = updated;
+    _registerStreakIfActive(shelfBook, updated);
     notifyListeners();
     _scheduleProgressPersistence();
   }
@@ -238,6 +245,15 @@ class BookshelfStore extends ChangeNotifier {
         '[BookshelfStore] Não foi possível salvar o progresso: $error',
       );
     }
+  }
+
+  void _registerStreakIfActive(ShelfBook? previous, ShelfBook current) {
+    final startedReading =
+        current.status == EnumBookStatus.reading &&
+        previous?.status != EnumBookStatus.reading;
+    final advanced = current.progress > (previous?.progress ?? 0);
+
+    if (startedReading || advanced) _streak.registerActivity();
   }
 
   void remove(Book book) {
