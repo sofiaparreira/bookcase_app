@@ -6,6 +6,7 @@ import 'package:bookcase/features/dashboard/dashboard_page.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/features/my_bookshelf/my_bookshelf_page.dart';
 import 'package:bookcase/features/search_books/search_books_page.dart';
+import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/shared/widgets/bottom_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -33,6 +34,7 @@ class _AppState extends State<App> {
   void initState() {
     super.initState();
     _loadBookshelf();
+    StreakStore.instance.load();
   }
 
   Future<void> _loadBookshelf() async {

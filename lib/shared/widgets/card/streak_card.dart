@@ -2,7 +2,6 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class StreakCard extends StatelessWidget {
-  // Quantidade de dias seguidos lendo (ofensiva)
   final int streakDays;
 
   static const List<String> weekDayLabels = [
@@ -15,7 +14,6 @@ class StreakCard extends StatelessWidget {
     'Dom',
   ];
 
-  // Dias da semana atual (seg → dom) em que o usuário leu
   final List<bool> completedDays;
 
   const StreakCard({
