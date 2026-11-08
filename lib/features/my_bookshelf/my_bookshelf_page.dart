@@ -43,9 +43,20 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
   Future<void> _loadBooksFromApi() async {
     try {
       await store.loadFromApi();
+      // Carrega também os livros do status selecionado diretamente do backend
+      await store.loadByStatus(selectedStatus);
     } catch (_) {
       if (!mounted) return;
       AppAlert.error(context, 'Não foi possível carregar sua estante.');
+    }
+  }
+
+  Future<void> _loadBooksByStatus(EnumBookStatus status) async {
+    try {
+      await store.loadByStatus(status);
+    } catch (_) {
+      if (!mounted) return;
+      AppAlert.error(context, 'Não foi possível carregar os livros.');
     }
   }
 
@@ -148,16 +159,19 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
                                       ),
                                       prefixIcon: Icon(tab.icon),
                                       selected: selectedStatus == tab.status,
-                                      onPressed: () => setState(
-                                        () => selectedStatus = tab.status,
-                                      ),
+                                      onPressed: () {
+                                        setState(
+                                          () => selectedStatus = tab.status,
+                                        );
+                                        _loadBooksByStatus(tab.status);
+                                      },
                                     ),
                                   ),
                               ],
                             ),
                           ),
                           Expanded(
-                            child: books.isEmpty && store.isLoadingFromApi
+                            child: books.isEmpty && (store.isLoadingFromApi || store.isLoadingStatus)
                                 ? const Center(
                                     child: CircularProgressIndicator(),
                                   )
