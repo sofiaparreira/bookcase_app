@@ -88,6 +88,7 @@ class ShelfBookCard extends StatelessWidget {
                     EnumBookStatus.reading => _buildReading(),
                     EnumBookStatus.finished => _buildFinished(),
                     EnumBookStatus.want => _buildWant(),
+                    EnumBookStatus.none => const SizedBox.shrink(),
                   },
                 ],
               ),

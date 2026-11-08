@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import 'package:bookcase/core/config/api_config.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthUser {
   final int? id;
@@ -34,10 +37,36 @@ class AuthUser {
 }
 
 class AuthService {
-  static const String baseUrl = 'https://bookcase-api-g9pa.onrender.com';
-
+  static const String _tokenStorageKey = 'bookcase_api_token';
+  static const String _emailStorageKey = 'bookcase_api_email';
   static String? _token;
   static AuthUser? _currentUser;
+
+  static Future<void> restoreSession() async {
+    late final SharedPreferences preferences;
+    try {
+      preferences = await SharedPreferences.getInstance();
+    } catch (error) {
+      debugPrint('[AuthService] Não foi possível ler a sessão local: $error');
+      return;
+    }
+    _token = preferences.getString(_tokenStorageKey);
+    if (_token == null || _token!.isEmpty) return;
+    _currentUser = AuthUser(
+      name: '',
+      email: preferences.getString(_emailStorageKey) ?? '',
+    );
+
+    try {
+      await AuthService().fetchCurrentUser();
+      debugPrint('[AuthService] Sessão da API restaurada.');
+    } catch (error) {
+      debugPrint('[AuthService] Não foi possível validar a sessão: $error');
+      if (error.toString().contains('Sessão expirada')) {
+        await AuthService().signOut();
+      }
+    }
+  }
 
   String? get token => _token;
   AuthUser? get currentUser => _currentUser;
@@ -48,7 +77,7 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final url = Uri.parse('$baseUrl/api/auth/register');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/register');
 
     final response = await http.post(
       url,
@@ -83,7 +112,7 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final url = Uri.parse('$baseUrl/api/auth/login');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
 
     final response = await http.post(
       url,
@@ -96,6 +125,14 @@ class AuthService {
       final token = data['token'] as String;
       _token = token;
       _currentUser = AuthUser(name: '', email: email.trim());
+      try {
+        final preferences = await SharedPreferences.getInstance();
+        await preferences.setString(_tokenStorageKey, token);
+        await preferences.setString(_emailStorageKey, email.trim());
+        debugPrint('[AuthService] Sessão da API armazenada localmente.');
+      } catch (error) {
+        debugPrint('[AuthService] Não foi possível armazenar a sessão: $error');
+      }
 
       try {
         await fetchCurrentUser();
@@ -116,7 +153,7 @@ class AuthService {
       throw Exception('Usuário não autenticado.');
     }
 
-    final url = Uri.parse('$baseUrl/api/auth/me');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/me');
 
     final response = await http.get(
       url,
@@ -144,9 +181,12 @@ class AuthService {
     }
   }
 
-  void signOut() {
+  Future<void> signOut() async {
     _token = null;
     _currentUser = null;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_tokenStorageKey);
+    await preferences.remove(_emailStorageKey);
   }
 
   /// Recuperação de senha

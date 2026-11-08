@@ -1,86 +1,116 @@
+// Feito por: João e Sofia Parreira Passos
 // Tela: Metas (lista)
-// Integrante: Joao vitor kadus
+import 'package:bookcase/features/goals/goal_utils.dart';
+import 'package:bookcase/features/goals/goals_service.dart';
+import 'package:bookcase/features/goals/meta_detalhe_screen.dart';
+import 'package:bookcase/features/goals/meta_form_screen.dart';
+import 'package:bookcase/models/reading_goal.dart';
 import 'package:flutter/material.dart';
 
-import 'meta_detalhe_screen.dart';
-import 'meta_form_screen.dart';
-
-const List<MetaItem> _metas = [
-  MetaItem(
-    titulo: 'Ler 12 livros em 2026',
-    tipo: 'livros',
-    atual: 8,
-    total: 12,
-    prazo: '31/12/2026',
-  ),
-  MetaItem(
-    titulo: '3.000 páginas no semestre',
-    tipo: 'páginas',
-    atual: 1450,
-    total: 3000,
-    prazo: '30/11/2026',
-  ),
-  MetaItem(
-    titulo: 'Clássicos brasileiros',
-    tipo: 'livros',
-    atual: 1,
-    total: 5,
-    prazo: '31/01/2027',
-  ),
-  MetaItem(
-    titulo: '500 páginas em outubro',
-    tipo: 'páginas',
-    atual: 500,
-    total: 500,
-    prazo: '31/10/2026',
-  ),
-];
-
-class MetasScreen extends StatelessWidget {
+class MetasScreen extends StatefulWidget {
   const MetasScreen({super.key});
 
-  static const double _bottomNavigationSpace = 76;
+  @override
+  State<MetasScreen> createState() => _MetasScreenState();
+}
+
+class _MetasScreenState extends State<MetasScreen> {
+  final _service = GoalsService();
+  late Future<List<ReadingGoal>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _service.getGoals();
+  }
+
+  void _reload() {
+    setState(() {
+      _future = _service.getGoals();
+    });
+  }
+
+  Future<void> _open(Widget page) async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => page),
+    );
+    if (changed == true) _reload();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Minhas metas')),
-      body: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(
-          12,
-          12,
-          12,
-          _bottomNavigationSpace + 80,
-        ),
-        itemCount: _metas.length,
-        itemBuilder: (context, i) {
-          final meta = _metas[i];
-          return Card(
-            child: ListTile(
-              leading: Icon(
-                meta.tipo == 'livros' ? Icons.menu_book : Icons.description,
-                color: Colors.teal,
-              ),
-              title: Text(meta.titulo),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 6),
+            appBar: AppBar(
+        title: const Text('Minhas metas'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Nova meta',
+            onPressed: () => _open(const MetaFormScreen()),
+          ),
+        ],
+      ),
+      body: FutureBuilder<List<ReadingGoal>>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    LinearProgressIndicator(value: meta.progresso),
-                    const SizedBox(height: 4),
                     Text(
-                      '${meta.atual} de ${meta.total} ${meta.tipo} • até ${meta.prazo}',
+                      cleanError(snapshot.error!),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: _reload,
+                      child: const Text('Tentar novamente'),
                     ),
                   ],
                 ),
               ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => MetaDetalheScreen(meta: meta),
+            );
+          }
+          final goals = snapshot.data ?? [];
+          if (goals.isEmpty) {
+            return const Center(
+              child: Text('Você ainda não tem metas.\nToque em "Nova meta".',
+                  textAlign: TextAlign.center),
+            );
+          }
+          return RefreshIndicator(
+            onRefresh: () async => _reload(),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: goals.length,
+              itemBuilder: (context, i) {
+                final goal = goals[i];
+                return Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.menu_book, color: Colors.teal),
+                    title: Text(goal.title),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LinearProgressIndicator(value: goal.progress),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${goal.currentBooks} de ${goal.targetBooks} livros • até ${formatDate(goal.endDate)}',
+                          ),
+                        ],
+                      ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _open(MetaDetalheScreen(goal: goal)),
                   ),
                 );
               },
@@ -88,17 +118,12 @@ class MetasScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: _bottomNavigationSpace),
+            floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90),
         child: FloatingActionButton.extended(
           icon: const Icon(Icons.add),
           label: const Text('Nova meta'),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MetaFormScreen()),
-            );
-          },
+          onPressed: () => _open(const MetaFormScreen()),
         ),
       ),
     );

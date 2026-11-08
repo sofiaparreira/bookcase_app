@@ -1,13 +1,18 @@
-// Tela: Formulário de Meta (criar/editar)
-// Integrante: Joao vitor kadus
+// Feito por: João e Sofia Parreira Passos
+
+import 'package:bookcase/features/goals/goal_utils.dart';
+import 'package:bookcase/features/goals/goals_service.dart';
+import 'package:bookcase/models/reading_goal.dart';
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
+import 'package:bookcase/shared/widgets/sub_page_layout.dart';
+import 'package:bookcase/shared/widgets/button/button_default.dart';
+import 'package:bookcase/shared/widgets/text_field/text_field_default.dart';
 import 'package:flutter/material.dart';
 
-import 'meta_detalhe_screen.dart';
-
 class MetaFormScreen extends StatefulWidget {
-  final MetaItem? meta; // null = nova meta, preenchido = editar
+  final ReadingGoal? goal;
 
-  const MetaFormScreen({super.key, this.meta});
+  const MetaFormScreen({super.key, this.goal});
 
   @override
   State<MetaFormScreen> createState() => _MetaFormScreenState();
@@ -15,105 +20,151 @@ class MetaFormScreen extends StatefulWidget {
 
 class _MetaFormScreenState extends State<MetaFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _service = GoalsService();
   late final TextEditingController _tituloCtrl;
-  late final TextEditingController _quantidadeCtrl;
-  late final TextEditingController _prazoCtrl;
-  String _tipo = 'livros';
+  late final TextEditingController _totalCtrl;
+  late final TextEditingController _atualCtrl;
+  late DateTime _start;
+  late DateTime _end;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    final m = widget.meta;
-    _tituloCtrl = TextEditingController(text: m?.titulo ?? '');
-    _quantidadeCtrl = TextEditingController(text: m?.total.toString() ?? '');
-    _prazoCtrl = TextEditingController(text: m?.prazo ?? '');
-    _tipo = m?.tipo ?? 'livros';
+    final g = widget.goal;
+    _tituloCtrl = TextEditingController(text: g?.title ?? '');
+    _totalCtrl = TextEditingController(text: g?.targetBooks.toString() ?? '');
+    _atualCtrl = TextEditingController(text: (g?.currentBooks ?? 0).toString());
+    _start = g?.startDate ?? DateTime.now();
+    _end = g?.endDate ?? DateTime.now().add(const Duration(days: 30));
   }
 
   @override
   void dispose() {
     _tituloCtrl.dispose();
-    _quantidadeCtrl.dispose();
-    _prazoCtrl.dispose();
+    _totalCtrl.dispose();
+    _atualCtrl.dispose();
     super.dispose();
   }
 
-  void _salvar() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Meta salva! (API na próxima etapa)')),
-      );
-      Navigator.pop(context);
+  Future<void> _pickDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? _start : _end,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (isStart) {
+        _start = picked;
+      } else {
+        _end = picked;
+      }
+    });
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_end.isBefore(_start)) {
+      AppAlert.error(context, 'A data final deve ser depois da inicial.');
+      return;
     }
+
+    final goal = ReadingGoal(
+      id: widget.goal?.id,
+      title: _tituloCtrl.text.trim(),
+      targetBooks: int.parse(_totalCtrl.text),
+      currentBooks: int.parse(_atualCtrl.text),
+      startDate: _start,
+      endDate: _end,
+    );
+
+    setState(() => _saving = true);
+    try {
+      if (widget.goal == null) {
+        await _service.createGoal(goal);
+      } else {
+        await _service.updateGoal(goal);
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      AppAlert.error(context, cleanError(e));
+    }
+  }
+
+  Widget _dateField(String label, DateTime value, bool isStart) {
+    return InkWell(
+      onTap: _saving ? null : () => _pickDate(isStart: isStart),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          suffixIcon: const Icon(Icons.calendar_today),
+        ),
+        child: Text(formatDate(value)),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final editando = widget.meta != null;
+    final editando = widget.goal != null;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(editando ? 'Editar meta' : 'Nova meta')),
-      body: Form(
+    return SubPageLayout(
+      title: editando ? 'Editar meta' : 'Nova meta',
+      child: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            TextFormField(
+            TextFieldDefault(
               controller: _tituloCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Título da meta',
-                hintText: 'Ex: Ler 12 livros em 2026',
-                border: OutlineInputBorder(),
-              ),
+              label: 'Título da meta',
+              hintText: 'Ex: Ler 12 livros em 2026',
+
               validator: (v) => (v == null || v.trim().isEmpty)
                   ? 'Informe o título da meta'
                   : null,
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: _tipo,
-              decoration: const InputDecoration(
-                labelText: 'Tipo da meta',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'livros', child: Text('Livros')),
-                DropdownMenuItem(value: 'páginas', child: Text('Páginas')),
-              ],
-              onChanged: (v) => setState(() => _tipo = v!),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _quantidadeCtrl,
+            TextFieldDefault(
+              controller: _totalCtrl,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Quantidade de $_tipo',
-                border: const OutlineInputBorder(),
-              ),
+              label: 'Quantidade de livros (meta)',
+
               validator: (v) {
                 final n = int.tryParse(v ?? '');
-                if (n == null || n <= 0)
+                if (n == null || n <= 0) {
                   return 'Informe um número maior que zero';
+                }
                 return null;
               },
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _prazoCtrl,
-              keyboardType: TextInputType.datetime,
-              decoration: const InputDecoration(
-                labelText: 'Prazo',
-                hintText: 'Ex: 31/12/2026',
-                border: OutlineInputBorder(),
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Informe o prazo da meta'
-                  : null,
+            TextFieldDefault(
+              controller: _atualCtrl,
+              keyboardType: TextInputType.number,
+              label: 'Livros já lidos',
+
+              validator: (v) {
+                final n = int.tryParse(v ?? '');
+                if (n == null || n < 0) return 'Informe 0 ou mais';
+                return null;
+              },
             ),
+            const SizedBox(height: 16),
+            _dateField('Data de início', _start, true),
+            const SizedBox(height: 16),
+            _dateField('Data final (prazo)', _end, false),
             const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _salvar,
-              child: Text(editando ? 'Salvar alterações' : 'Criar meta'),
+            ButtonDefault(
+              text: editando ? 'Salvar alterações' : 'Criar meta',
+              isLoading: _saving,
+              onPressed: _saving ? null : _save,
+              width: ButtonWidth.full,
             ),
           ],
         ),

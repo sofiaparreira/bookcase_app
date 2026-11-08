@@ -9,7 +9,7 @@ class AppDecorations {
 
   static BoxDecoration get card => BoxDecoration(
     color: AppColors.cardSurface,
-    borderRadius: BorderRadius.circular(24),
+    borderRadius: BorderRadius.circular(20),
     boxShadow: AppShadows.card,
   );
 

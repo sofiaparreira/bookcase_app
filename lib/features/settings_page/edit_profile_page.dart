@@ -1,4 +1,5 @@
 // Tela feita por: Maria Luiza Bertolino Matos
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
@@ -72,9 +73,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (!confirmed || !mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Perfil atualizado com sucesso!')),
-    );
+    AppAlert.success(context, 'Perfil atualizado com sucesso!');
     Navigator.pop(context);
   }
 

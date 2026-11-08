@@ -15,7 +15,8 @@ class SelectBookStatusModal extends StatefulWidget {
 
 class _SelectBookStatusModalState extends State<SelectBookStatusModal> {
   void onPressedStatus(EnumBookStatus status) {
-    Navigator.pop(context, status);
+    final isSelected = status == widget.currentStatus;
+    Navigator.pop(context, isSelected ? EnumBookStatus.none : status);
   }
 
   @override

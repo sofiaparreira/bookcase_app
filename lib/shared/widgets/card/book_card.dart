@@ -1,8 +1,6 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/shared/widgets/book_cover.dart';
-import 'package:bookcase/shared/widgets/button/button_default.dart';
-import 'package:bookcase/shared/widgets/button/icon_button_default.dart';
 import 'package:bookcase/shared/widgets/title_card.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -13,9 +11,6 @@ class BookCard extends StatelessWidget {
   final int totalPages;
   final String? imageUrl;
   final VoidCallback? onPressedCard;
-  final VoidCallback? onPressedAdd;
-
-  final bool isAdded;
 
   const BookCard({
     super.key,
@@ -24,8 +19,6 @@ class BookCard extends StatelessWidget {
     required this.totalPages,
     this.imageUrl,
     this.onPressedCard,
-    this.onPressedAdd,
-    this.isAdded = false,
   });
 
   @override
@@ -78,16 +71,6 @@ class BookCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 16),
-                IconButtonDefault(
-                  icon: Icon(isAdded ? LucideIcons.check : LucideIcons.plus),
-                  tooltip: isAdded ? 'Alterar status' : 'Adicionar à estante',
-                  onPressed: onPressedAdd,
-                  variant: isAdded
-                      ? ButtonVariant.transparent
-                      : ButtonVariant.primary,
-                  size: ButtonSize.sm,
                 ),
               ],
             ),

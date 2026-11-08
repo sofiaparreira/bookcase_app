@@ -1,5 +1,6 @@
 // Tela feita por: Maria Luiza Bertolino Matos
 
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
@@ -45,9 +46,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     if (!confirmed || !mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Senha alterada com sucesso!')),
-    );
+    AppAlert.success(context, 'Senha alterada com sucesso!');
     Navigator.pop(context);
   }
 

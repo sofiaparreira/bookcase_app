@@ -1,8 +1,10 @@
 // Tela feita por: Maria Luiza Bertolino Matos
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
 import 'package:bookcase/features/auth/login_page.dart';
+import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/features/settings_page/change_password_page.dart';
 import 'package:bookcase/features/settings_page/edit_profile_page.dart';
 import 'package:bookcase/features/settings_page/info_page.dart';
@@ -56,9 +58,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final rating = await showRateAppDialog(context);
     if (rating == null || !mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Avaliação enviada. Obrigado!')),
-    );
+    AppAlert.success(context, 'Avaliação enviada. Obrigado!');
   }
 
   Future<void> _confirmSignOut() async {
@@ -72,7 +72,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (!confirmed || !mounted) return;
 
-    _authService.signOut();
+    await _authService.signOut();
+    BookshelfStore.instance.clear();
+    if (!mounted) return;
 
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
