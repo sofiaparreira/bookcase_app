@@ -188,9 +188,4 @@ class AuthService {
     await preferences.remove(_tokenStorageKey);
     await preferences.remove(_emailStorageKey);
   }
-
-  /// Recuperação de senha
-  Future<void> sendPasswordResetEmail(String email) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-  }
 }
