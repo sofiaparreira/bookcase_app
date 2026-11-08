@@ -2,10 +2,12 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/features/shopping_list/shopping_list_page.dart';
+import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/card/metric_card.dart';
 import 'package:bookcase/shared/widgets/card/reading_card.dart';
+import 'package:bookcase/shared/widgets/card/streak_card.dart';
 import 'package:bookcase/shared/widgets/modal/update_reading_progress_modal.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
 import 'package:bookcase/shared/widgets/text/title_h2.dart';
@@ -13,9 +15,6 @@ import 'package:flutter/material.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
-
-  // Quantidade de dias seguidos lendo (ofensiva)
-  static const int streakDays = 7;
 
   static const List<ReadingBook> readingBooksList = [
     ReadingBook(
@@ -55,55 +54,36 @@ class DashboardPage extends StatelessWidget {
           child: Column(
             children: [
               // TOPO (PARTE ROXA)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Olá',
-                          style: TextStyle(
-                            color: Color.fromARGB(180, 255, 255, 255),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w100,
-                          ),
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Olá',
+                        style: TextStyle(
+                          color: Color.fromARGB(180, 255, 255, 255),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w100,
                         ),
-                        TitleH1(text: 'Ana', color: Colors.white),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.white15,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.local_fire_department_rounded,
-                            color: AppColors.secondary,
-                            size: 22,
-                          ),
-                          SizedBox(width: 5),
-                          Text(
-                            '$streakDays dias',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                      TitleH1(text: 'Ana', color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+
+              // STREAK DA SEMANA
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: ListenableBuilder(
+                  listenable: StreakStore.instance,
+                  builder: (context, _) => StreakCard(
+                    streakDays: StreakStore.instance.currentStreak,
+                    completedDays: StreakStore.instance.weekActivity,
+                  ),
                 ),
               ),
 

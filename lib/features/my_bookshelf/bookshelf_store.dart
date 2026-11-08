@@ -1,13 +1,16 @@
 // Feito por: Maria Luiza Bertolino Matos
 
+import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/models/shelf_book.dart';
 import 'package:flutter/foundation.dart';
 
 class BookshelfStore extends ChangeNotifier {
-  BookshelfStore._();
+  BookshelfStore._(this._streak);
 
-  static final BookshelfStore instance = BookshelfStore._();
+  static final BookshelfStore instance = BookshelfStore._(StreakStore.instance);
+
+  final StreakStore _streak;
 
   final Map<int, ShelfBook> _books = {};
 
@@ -25,8 +28,9 @@ class BookshelfStore extends ChangeNotifier {
   bool contains(Book book) => _books.containsKey(book.id);
 
   void save(ShelfBook shelfBook) {
-    _books.remove(shelfBook.book.id);
+    final previous = _books.remove(shelfBook.book.id);
     _books[shelfBook.book.id] = shelfBook;
+    _registerStreakIfActive(previous, shelfBook);
     notifyListeners();
   }
 
@@ -34,8 +38,19 @@ class BookshelfStore extends ChangeNotifier {
     final shelfBook = _books[book.id];
     if (shelfBook == null) return;
 
-    _books[book.id] = shelfBook.copyWith(progress: progress.clamp(0.0, 1.0));
+    final updated = shelfBook.copyWith(progress: progress.clamp(0.0, 1.0));
+    _books[book.id] = updated;
+    _registerStreakIfActive(shelfBook, updated);
     notifyListeners();
+  }
+
+  void _registerStreakIfActive(ShelfBook? previous, ShelfBook current) {
+    final startedReading =
+        current.status == EnumBookStatus.reading &&
+        previous?.status != EnumBookStatus.reading;
+    final advanced = current.progress > (previous?.progress ?? 0);
+
+    if (startedReading || advanced) _streak.registerActivity();
   }
 
   void remove(Book book) {
