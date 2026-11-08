@@ -7,6 +7,8 @@ import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/models/book.dart';
+import 'package:bookcase/features/shopping_list/shopping_list_page.dart';
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/progress/reading_progress_bar.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
@@ -23,6 +25,22 @@ class BookDetailsPage extends StatelessWidget {
     await BookshelfActions.selectStatus(context, book);
   }
 
+  Future<void> _startReading(BuildContext context) async {
+    try {
+      final saved = await BookshelfActions.startReading(context, book);
+      if (saved && context.mounted) {
+        AppAlert.success(context, 'Leitura iniciada!');
+      }
+    } catch (_) {
+      if (context.mounted) {
+        AppAlert.error(
+          context,
+          'Não foi possível iniciar a leitura. Tente novamente.',
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -30,6 +48,7 @@ class BookDetailsPage extends StatelessWidget {
       builder: (context, _) {
         final shelfBook = BookshelfStore.instance.find(book);
         final isReading = shelfBook?.status == EnumBookStatus.reading;
+        final isWant = shelfBook?.status == EnumBookStatus.want;
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -148,23 +167,34 @@ class BookDetailsPage extends StatelessWidget {
                                     : [
                                         Expanded(
                                           child: ButtonDefault(
-                                            text: 'Adicionar à estante',
+                                            text: isWant
+                                                ? 'Quero ler'
+                                                : 'Adicionar à estante',
+                                            suffixIcon: isWant
+                                                ? const Icon(
+                                                    LucideIcons.chevronDown,
+                                                    size: 18,
+                                                  )
+                                                : null,
                                             width: ButtonWidth.full,
                                             size: ButtonSize.md,
                                             onPressed: () =>
                                                 openBookStatusModal(context),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: ButtonDefault(
-                                            text: 'Adicionar às compras',
-                                            width: ButtonWidth.full,
-                                            size: ButtonSize.md,
-                                            variant: ButtonVariant.transparent,
-                                            onPressed: () {},
+                                        if (isWant) ...[
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: ButtonDefault(
+                                              text: 'Iniciar leitura',
+                                              width: ButtonWidth.full,
+                                              size: ButtonSize.md,
+                                              variant: ButtonVariant.secondary,
+                                              onPressed: () =>
+                                                  _startReading(context),
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ],
                               ),
                             ],
@@ -266,14 +296,68 @@ class BookDetailsPage extends StatelessWidget {
                         Text(book.description ?? ''),
                         if (!isReading) ...[
                           const SizedBox(height: 24),
-                          ButtonDefault(
-                            text: 'Adicionar à estante',
-                            width: ButtonWidth.full,
-                            size: ButtonSize.lg,
-                            prefixIcon: const Icon(LucideIcons.plus, size: 19),
-                            onPressed: () => openBookStatusModal(context),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ButtonDefault(
+                                  text: isWant
+                                      ? 'Quero ler'
+                                      : 'Adicionar à estante',
+                                  width: ButtonWidth.full,
+                                  size: ButtonSize.lg,
+                                  prefixIcon: isWant
+                                      ? null
+                                      : const Icon(LucideIcons.plus, size: 19),
+                                  suffixIcon: isWant
+                                      ? const Icon(
+                                          LucideIcons.chevronDown,
+                                          size: 18,
+                                        )
+                                      : null,
+                                  onPressed: () => openBookStatusModal(context),
+                                ),
+                              ),
+                              if (isWant) ...[
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ButtonDefault(
+                                    text: 'Iniciar leitura',
+                                    width: ButtonWidth.full,
+                                    size: ButtonSize.lg,
+                                    variant: ButtonVariant.secondary,
+                                    onPressed: () => _startReading(context),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
+                        const SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton.filledTonal(
+                            tooltip: 'Adicionar à lista de compras',
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ShoppingListPage(initialBook: book),
+                              ),
+                            ),
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.primary10,
+                              foregroundColor: AppColors.primary,
+                              minimumSize: const Size.square(48),
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: AppDecorations.buttonBorderRadius,
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.add_shopping_cart_rounded,
+                              size: 24,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

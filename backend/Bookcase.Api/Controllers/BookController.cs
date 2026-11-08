@@ -27,14 +27,19 @@ public class BookController : ControllerBase
         _context = context;
     }
 
-    // GET /api/book (Lista todos os livros)
+    // GET /api/book (Lista todos os livros do usuário autenticado, com filtro opcional por status de leitura)
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] Book.ReadingStatus? status)
     {
         var userId = GetUserId();
-        var books = await _context.Books
-        .Where(book => book.UserId == userId) // Filtra os livros pelo ID do usuário autenticado
-        .ToListAsync();
+        var query = _context.Books.Where(book => book.UserId == userId);
+
+        if(status != null)
+        {
+            query = query.Where(book => book.Status == status);
+        }
+
+        var books = await query.ToListAsync();
         return Ok(books);
     }
 

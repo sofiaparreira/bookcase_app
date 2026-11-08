@@ -1,5 +1,6 @@
 // Tela feita por: Arthur Cândido Teixeira
 
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/app.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
@@ -8,6 +9,7 @@ import 'package:bookcase/features/auth/register_page.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/text_field/text_field_default.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class LoginPage extends StatefulWidget {
@@ -53,12 +55,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       if (!mounted) return;
       final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppAlert.error(context, errorMessage);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -75,6 +72,12 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
+          backgroundColor: AppColors.background,
+          icon: const Icon(
+            Icons.lock_reset_rounded,
+            color: AppColors.primary,
+            size: 32,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -129,21 +132,15 @@ class _LoginPageState extends State<LoginPage> {
                 try {
                   await _authService.sendPasswordResetEmail(email);
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'E-mail de recuperação enviado com sucesso!',
-                      ),
-                      backgroundColor: Colors.green,
-                    ),
+                  AppAlert.success(
+                    context,
+                    'E-mail de recuperação enviado com sucesso!',
                   );
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Erro ao enviar e-mail de recuperação.'),
-                      backgroundColor: Colors.redAccent,
-                    ),
+                  AppAlert.error(
+                    context,
+                    'Erro ao enviar e-mail de recuperação.',
                   );
                 }
               },
@@ -175,33 +172,13 @@ class _LoginPageState extends State<LoginPage> {
                     Positioned.fill(
                       child: CustomPaint(painter: _HeaderCirclesPainter()),
                     ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 54,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            color: AppColors.white15,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(
-                            LucideIcons.fileText,
-                            color: Colors.white,
-                            size: 26,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Página',
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Estante',
+                      style: GoogleFonts.dmSerifDisplay(
+                        color: Colors.white,
+                        fontSize: 36,
+                        letterSpacing: -0.8,
+                      ),
                     ),
                   ],
                 ),
@@ -365,12 +342,9 @@ class _LoginPageState extends State<LoginPage> {
                               color: AppColors.textPrimary,
                             ),
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Login social em desenvolvimento.',
-                                  ),
-                                ),
+                              AppAlert.info(
+                                context,
+                                'Login social em desenvolvimento.',
                               );
                             },
                           ),

@@ -1,5 +1,6 @@
 // Tela feita por: Arthur Cândido Teixeira
 
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
@@ -47,23 +48,16 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Conta criada com sucesso! Faça login para continuar.'),
-          backgroundColor: Colors.green,
-        ),
+      AppAlert.success(
+        context,
+        'Conta criada com sucesso! Faça login para continuar.',
       );
 
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppAlert.error(context, errorMessage);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

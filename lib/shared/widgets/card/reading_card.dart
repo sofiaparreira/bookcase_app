@@ -28,6 +28,9 @@ class ReadingCard extends StatelessWidget {
     this.imageUrl,
   });
 
+  static const double _coverWidth = 104;
+  static const double _gap = 14;
+
   @override
   Widget build(BuildContext context) {
     final cardWidth = (MediaQuery.sizeOf(context).width - 40).clamp(
@@ -49,75 +52,20 @@ class ReadingCard extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 14,
+        padding: const EdgeInsets.all(8),
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            // CAPA
-            _buildCover(),
-
-            // INFORMAÇÕES
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const BadgeDefault(text: 'Lendo'),
-                  const SizedBox(height: 8),
-
-                  TitleCard(text: title),
-                  const SizedBox(height: 2),
-
-                  Text(
-                    author,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        totalPages > 0
-                            ? 'Pág. $currentPage de $totalPages'
-                            : '$progressPercent% concluído',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      Text(
-                        '$progressPercent%',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  ReadingProgressBar(
-                    progress: progress,
-                    semanticLabel: 'Progresso de leitura de $title',
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  ButtonDefault(
-                    text: 'Atualizar progresso',
-                    size: ButtonSize.sm,
-                    width: ButtonWidth.fit,
-                    onPressed: onUpdateProgress,
-                  ),
-                ],
-              ),
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: _coverWidth,
+              child: _buildCover(),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: _coverWidth + _gap),
+              child: _buildInfo(),
             ),
           ],
         ),
@@ -125,10 +73,68 @@ class ReadingCard extends StatelessWidget {
     );
   }
 
+  Widget _buildInfo() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const BadgeDefault(text: 'Lendo'),
+        const SizedBox(height: 8),
+
+        TitleCard(text: title),
+        const SizedBox(height: 2),
+
+        Text(
+          author,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+        ),
+
+        const SizedBox(height: 10),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              totalPages > 0
+                  ? 'Pág. $currentPage de $totalPages'
+                  : '$progressPercent% concluído',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+            Text(
+              '$progressPercent%',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 5),
+
+        ReadingProgressBar(
+          progress: progress,
+          semanticLabel: 'Progresso de leitura de $title',
+        ),
+
+        const SizedBox(height: 10),
+
+        ButtonDefault(
+          text: 'Atualizar progresso',
+          size: ButtonSize.sm,
+          width: ButtonWidth.fit,
+          onPressed: onUpdateProgress,
+        ),
+      ],
+    );
+  }
+
   Widget _buildCover() {
     return Container(
-      width: 82,
-      height: 124,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         boxShadow: [

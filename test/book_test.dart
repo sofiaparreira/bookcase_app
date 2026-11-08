@@ -3,6 +3,26 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Book', () {
+    test('envia status lido e nota sem data de conclusão', () {
+      final book = Book.fromApiJson({
+        'id': 42,
+        'title': 'Livro salvo',
+        'status': 1,
+        'rating': 3,
+      });
+      final payload = book.toApiJson(
+        status: EnumBookStatus.finished,
+        rating: 5,
+      );
+
+      expect(payload['status'], 2);
+      expect(payload['rating'], 5);
+      expect(payload.containsKey('finishedAt'), isFalse);
+      expect(book.rating, 3);
+      expect(book.copyWith().rating, 3);
+      expect(book.withExternalMetadata(book).rating, 3);
+    });
+
     test('converte o status InProgress retornado pela API para Lendo', () {
       final book = Book.fromApiJson({
         'id': 42,

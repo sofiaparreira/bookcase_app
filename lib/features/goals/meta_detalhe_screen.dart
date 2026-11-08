@@ -1,58 +1,99 @@
 // Feito por: João e Sofia Parreira Passos
-
+// Tela: Detalhe da Meta
+import 'package:bookcase/features/goals/goal_utils.dart';
+import 'package:bookcase/features/goals/goals_service.dart';
+import 'package:bookcase/features/goals/meta_form_screen.dart';
+import 'package:bookcase/models/reading_goal.dart';
+import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
+import 'package:bookcase/shared/widgets/modal/update_reading_progress_modal.dart';
 import 'package:bookcase/shared/widgets/sub_page_layout.dart';
-import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter/material.dart';
 
-import 'meta_form_screen.dart';
+class MetaDetalheScreen extends StatefulWidget {
+  final ReadingGoal goal;
 
-class MetaItem {
-  final String titulo;
-  final String tipo;
-  final int atual;
-  final int total;
-  final String prazo;
+  const MetaDetalheScreen({super.key, required this.goal});
 
-  const MetaItem({
-    required this.titulo,
-    required this.tipo,
-    required this.atual,
-    required this.total,
-    required this.prazo,
-  });
-
-  double get progresso => atual / total;
+  @override
+  State<MetaDetalheScreen> createState() => _MetaDetalheScreenState();
 }
 
-class MetaDetalheScreen extends StatelessWidget {
-  final MetaItem meta;
+class _MetaDetalheScreenState extends State<MetaDetalheScreen> {
+  final _service = GoalsService();
+  ReadingGoal get _goal => widget.goal;
+  bool _deleting = false;
+  bool _savingProgress = false;
 
-  const MetaDetalheScreen({super.key, required this.meta});
+  Future<void> _edit() async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => MetaFormScreen(goal: _goal)),
+    );
+    if (changed == true && mounted) Navigator.pop(context, true);
+  }
 
-  Future<void> _deleteGoal(BuildContext context) async {
-    final confirmed = await showConfirmDialog(
+  Future<void> _updateProgress() async {
+    final result = await showModalBottomSheet<ReadingProgressResult>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => UpdateReadingProgressModal(
+        title: _goal.bookTitle ?? _goal.title,
+        currentPage: _goal.currentPage,
+        totalPages: _goal.targetPages,
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    final page = (result.progress * _goal.targetPages).round().clamp(
+      0,
+      _goal.targetPages,
+    );
+    if (page == _goal.currentPage) return;
+
+    setState(() => _savingProgress = true);
+    try {
+      await _service.updateProgress(_goal.id!, page);
+      if (!mounted) return;
+      AppAlert.success(context, 'Progresso atualizado!');
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _savingProgress = false);
+      AppAlert.error(context, cleanError(e));
+    }
+  }
+
+  Future<void> _delete() async {
+    final confirm = await showConfirmDialog(
       context,
       title: 'Excluir meta?',
-      message: 'Essa ação removerá “${meta.titulo}” das suas metas.',
+      message: 'Essa ação removerá “${_goal.title}” das suas metas.',
       confirmText: 'Excluir',
       destructive: true,
     );
+    if (!confirm || !mounted) return;
 
-    if (!confirmed || !context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Exclusão na próxima etapa')));
+    setState(() => _deleting = true);
+    try {
+      await _service.deleteGoal(_goal.id!);
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      AppAlert.error(context, cleanError(e));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final progress = meta.progresso.clamp(0.0, 1.0);
-    final percentage = (progress * 100).round();
-    final isComplete = progress >= 1;
+    final progress = _goal.progress;
+    final percentage = _goal.progressPercent;
+    final isComplete = _goal.isCompleted;
 
     return SubPageLayout(
       title: 'Detalhe da meta',
@@ -84,9 +125,7 @@ class MetaDetalheScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               child: Icon(
-                                meta.tipo == 'livros'
-                                    ? LucideIcons.bookOpen
-                                    : LucideIcons.fileText,
+                                LucideIcons.bookOpen,
                                 size: 25,
                                 color: isComplete
                                     ? AppColors.secondary
@@ -122,7 +161,7 @@ class MetaDetalheScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 9),
                                   Text(
-                                    meta.titulo,
+                                    _goal.title,
                                     style: const TextStyle(
                                       color: AppColors.textPrimary,
                                       fontSize: 20,
@@ -153,7 +192,7 @@ class MetaDetalheScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${meta.atual} de ${meta.total} ${meta.tipo}',
+                                    'Página ${_goal.currentPage} de ${_goal.targetPages}',
                                     style: const TextStyle(
                                       color: AppColors.textPrimary,
                                       fontSize: 15,
@@ -199,9 +238,9 @@ class MetaDetalheScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _DetailRow(
-                          icon: LucideIcons.layers3,
-                          label: 'Tipo da meta',
-                          value: meta.tipo == 'livros' ? 'Livros' : 'Páginas',
+                          icon: LucideIcons.bookOpen,
+                          label: 'Livro',
+                          value: _goal.bookTitle ?? 'Livro #${_goal.bookId}',
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 14),
@@ -213,8 +252,22 @@ class MetaDetalheScreen extends StatelessWidget {
                         _DetailRow(
                           icon: LucideIcons.calendarDays,
                           label: 'Prazo',
-                          value: meta.prazo,
+                          value: formatDate(_goal.endDate),
                         ),
+                        if (_goal.completedAt != null) ...[
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Divider(
+                              height: 1,
+                              color: AppColors.surfaceBorder,
+                            ),
+                          ),
+                          _DetailRow(
+                            icon: LucideIcons.calendarDays,
+                            label: 'Concluída em',
+                            value: formatDate(_goal.completedAt!),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -230,7 +283,20 @@ class MetaDetalheScreen extends StatelessWidget {
                 color: AppColors.background,
                 border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ButtonDefault(
+                    text: 'Atualizar progresso',
+                    width: ButtonWidth.full,
+                    size: ButtonSize.lg,
+                    isLoading: _savingProgress,
+                    onPressed: (_deleting || _savingProgress)
+                        ? null
+                        : _updateProgress,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
                 children: [
                   Expanded(
                     child: ButtonDefault(
@@ -242,7 +308,8 @@ class MetaDetalheScreen extends StatelessWidget {
                         size: 18,
                         color: AppColors.danger,
                       ),
-                      onPressed: () => _deleteGoal(context),
+                      isLoading: _deleting,
+                      onPressed: _deleting ? null : _delete,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -251,16 +318,11 @@ class MetaDetalheScreen extends StatelessWidget {
                       text: 'Editar',
                       size: ButtonSize.lg,
                       prefixIcon: const Icon(LucideIcons.pencil, size: 18),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MetaFormScreen(meta: meta),
-                          ),
-                        );
-                      },
+                      onPressed: _deleting ? null : _edit,
                     ),
                   ),
+                ],
+              ),
                 ],
               ),
             ),

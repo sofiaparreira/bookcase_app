@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/models/shelf_book.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
@@ -12,21 +13,24 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BookshelfStore extends ChangeNotifier {
-  BookshelfStore._();
+  BookshelfStore._(this._streak);
 
-  static final BookshelfStore instance = BookshelfStore._();
+  static final BookshelfStore instance = BookshelfStore._(StreakStore.instance);
+
+  final StreakStore _streak;
 
   final Map<int, ShelfBook> _books = {};
   final BookStatusService _statusService = BookStatusService();
   final GoogleBooksService _googleBooksService = GoogleBooksService();
   Timer? _progressSaveTimer;
   bool isLoadingFromApi = false;
+  bool isLoadingStatus = false;
   String? _loadedForToken;
 
-  Future<void> loadFromApi() async {
+  Future<void> loadFromApi({bool refresh = false}) async {
     final token = AuthService().token;
     if (isLoadingFromApi || token == null || token.isEmpty) return;
-    if (_loadedForToken == token) return;
+    if (!refresh && _loadedForToken == token) return;
 
     isLoadingFromApi = true;
     notifyListeners();
@@ -41,50 +45,92 @@ class BookshelfStore extends ChangeNotifier {
       _books.clear();
 
       for (final apiBook in enrichedApiBooks) {
-        ShelfBook? previous;
-        for (final item in previousBooks) {
-          final sameDatabaseId =
-              apiBook.databaseId != null &&
-              item.book.databaseId == apiBook.databaseId;
-          final sameTitle =
-              _normalize(item.book.title) == _normalize(apiBook.title);
-          final sameTitleAndAuthor =
-              sameTitle &&
-              (_normalize(item.book.author).isEmpty ||
-                  _normalize(apiBook.author).isEmpty ||
-                  _normalize(item.book.author) == _normalize(apiBook.author));
-          if (sameDatabaseId || sameTitleAndAuthor) {
-            previous = item;
-            break;
-          }
-        }
-
-        final displayBook =
-            previous?.book.copyWith(databaseId: apiBook.databaseId) ?? apiBook;
-        final savedBookProgress = savedProgress[apiBook.databaseId.toString()];
-        final savedProgressValue = savedBookProgress is Map
-            ? _numberAsDouble(savedBookProgress['progress'])
-            : null;
-        final savedTotalPages = savedBookProgress is Map
-            ? _numberAsInt(savedBookProgress['totalPages'])
-            : null;
-        final savedShelfBook = ShelfBook(
-          book: displayBook,
-          status: apiBook.status,
-          progress: previous?.progress ?? savedProgressValue ?? 0,
-          totalPages: previous != null && previous.totalPages > 0
-              ? previous.totalPages
-              : savedTotalPages ?? apiBook.totalPages,
-          rating: previous?.rating,
-          finishedAt: previous?.finishedAt,
-        );
-        _books[displayBook.id] = savedShelfBook;
+        _mergeApiBook(apiBook, previousBooks, savedProgress);
       }
       _loadedForToken = token;
     } finally {
       isLoadingFromApi = false;
       notifyListeners();
     }
+  }
+
+  /// Carrega do backend apenas os livros com o [status] informado,
+  /// atualizando o cache local para aquele status sem apagar os demais.
+  Future<void> loadByStatus(EnumBookStatus status, {bool refresh = false}) async {
+    final token = AuthService().token;
+    if (isLoadingStatus || token == null || token.isEmpty) return;
+
+    isLoadingStatus = true;
+    notifyListeners();
+
+    try {
+      final apiBooks = await _statusService.getBooksForCurrentUser(status: status);
+      final enrichedApiBooks = await Future.wait(
+        apiBooks.map(_restoreGoogleBookData),
+      );
+      final savedProgress = await _readSavedProgress();
+      final previousBooks = _books.values.toList();
+
+      // Remove do cache local todos os livros que possuíam esse status
+      _books.removeWhere((_, shelfBook) => shelfBook.status == status);
+
+      for (final apiBook in enrichedApiBooks) {
+        _mergeApiBook(apiBook, previousBooks, savedProgress);
+      }
+    } finally {
+      isLoadingStatus = false;
+      notifyListeners();
+    }
+  }
+
+  void _mergeApiBook(
+    Book apiBook,
+    List<ShelfBook> previousBooks,
+    Map<String, dynamic> savedProgress,
+  ) {
+    ShelfBook? previous;
+    for (final item in previousBooks) {
+      final sameDatabaseId =
+          apiBook.databaseId != null &&
+          item.book.databaseId == apiBook.databaseId;
+      final sameTitle =
+          _normalize(item.book.title) == _normalize(apiBook.title);
+      final sameTitleAndAuthor =
+          sameTitle &&
+          (_normalize(item.book.author).isEmpty ||
+              _normalize(apiBook.author).isEmpty ||
+              _normalize(item.book.author) == _normalize(apiBook.author));
+      if (sameDatabaseId || sameTitleAndAuthor) {
+        previous = item;
+        break;
+      }
+    }
+
+    final displayBook =
+        previous?.book.copyWith(
+          databaseId: apiBook.databaseId,
+          status: apiBook.status,
+          rating: apiBook.rating,
+        ) ??
+        apiBook;
+    final savedBookProgress = savedProgress[apiBook.databaseId.toString()];
+    final savedProgressValue = savedBookProgress is Map
+        ? _numberAsDouble(savedBookProgress['progress'])
+        : null;
+    final savedTotalPages = savedBookProgress is Map
+        ? _numberAsInt(savedBookProgress['totalPages'])
+        : null;
+    final savedShelfBook = ShelfBook(
+      book: displayBook,
+      status: apiBook.status,
+      progress: previous?.progress ?? savedProgressValue ?? 0,
+      totalPages: previous != null && previous.totalPages > 0
+          ? previous.totalPages
+          : savedTotalPages ?? apiBook.totalPages,
+      rating: apiBook.rating > 0 ? apiBook.rating.round() : null,
+      finishedAt: previous?.finishedAt,
+    );
+    _books[displayBook.id] = savedShelfBook;
   }
 
   List<ShelfBook> booksWithStatus(EnumBookStatus status) => _books.values
@@ -123,7 +169,10 @@ class BookshelfStore extends ChangeNotifier {
     return null;
   }
 
-  bool contains(Book book) => find(book) != null;
+  bool contains(Book book) {
+    final shelfBook = find(book);
+    return shelfBook != null && shelfBook.status != EnumBookStatus.none;
+  }
 
   void save(ShelfBook shelfBook) {
     final existingIds = _books.entries
@@ -145,10 +194,12 @@ class BookshelfStore extends ChangeNotifier {
         })
         .map((entry) => entry.key)
         .toList();
+    final previous = existingIds.isEmpty ? null : _books[existingIds.first];
     for (final id in existingIds) {
       _books.remove(id);
     }
     _books[shelfBook.book.id] = shelfBook;
+    _registerStreakIfActive(previous, shelfBook);
     notifyListeners();
     _scheduleProgressPersistence();
   }
@@ -164,7 +215,9 @@ class BookshelfStore extends ChangeNotifier {
     final shelfBook = _books[book.id];
     if (shelfBook == null) return;
 
-    _books[book.id] = shelfBook.copyWith(progress: progress.clamp(0.0, 1.0));
+    final updated = shelfBook.copyWith(progress: progress.clamp(0.0, 1.0));
+    _books[book.id] = updated;
+    _registerStreakIfActive(shelfBook, updated);
     notifyListeners();
     _scheduleProgressPersistence();
   }
@@ -192,6 +245,15 @@ class BookshelfStore extends ChangeNotifier {
         '[BookshelfStore] Não foi possível salvar o progresso: $error',
       );
     }
+  }
+
+  void _registerStreakIfActive(ShelfBook? previous, ShelfBook current) {
+    final startedReading =
+        current.status == EnumBookStatus.reading &&
+        previous?.status != EnumBookStatus.reading;
+    final advanced = current.progress > (previous?.progress ?? 0);
+
+    if (startedReading || advanced) _streak.registerActivity();
   }
 
   void remove(Book book) {

@@ -4,11 +4,11 @@ import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
 import 'package:bookcase/features/auth/login_page.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
+import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/features/settings_page/change_password_page.dart';
 import 'package:bookcase/features/settings_page/edit_profile_page.dart';
 import 'package:bookcase/features/settings_page/info_page.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
-import 'package:bookcase/shared/widgets/modal/rate_app_dialog.dart';
 import 'package:bookcase/shared/widgets/sub_page_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -23,13 +23,6 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _authService = AuthService();
 
-  static const _goalStep = 5;
-  static const _goalMin = 5;
-  static const _goalMax = 240;
-
-  bool _notifications = true;
-  int _dailyGoalMinutes = 30;
-
   String get _displayName {
     final user = _authService.currentUser;
     if (user == null) return 'Leitor';
@@ -43,23 +36,8 @@ class _SettingsPageState extends State<SettingsPage> {
     return initials.isNotEmpty ? initials : _displayName[0].toUpperCase();
   }
 
-  void _changeDailyGoal(int delta) {
-    setState(() {
-      _dailyGoalMinutes = (_dailyGoalMinutes + delta).clamp(_goalMin, _goalMax);
-    });
-  }
-
   void _openPage(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
-  }
-
-  Future<void> _rateApp() async {
-    final rating = await showRateAppDialog(context);
-    if (rating == null || !mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Avaliação enviada. Obrigado!')),
-    );
   }
 
   Future<void> _confirmSignOut() async {
@@ -75,6 +53,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
     await _authService.signOut();
     BookshelfStore.instance.clear();
+    StreakStore.instance.clear();
+    if (!mounted) return;
 
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -93,8 +73,6 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             const _SectionLabel('Conta'),
             _buildAccountSection(),
-            const _SectionLabel('Preferências'),
-            _buildPreferencesSection(),
             const _SectionLabel('Aplicativo'),
             _buildAppSection(),
             const SizedBox(height: 24),
@@ -177,61 +155,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildPreferencesSection() {
-    return _SettingsCard(
-      children: [
-        _SettingsTile(
-          icon: LucideIcons.bell,
-          title: 'Notificações',
-          subtitle: 'Lembretes diários de leitura',
-          trailing: _buildSwitch(
-            _notifications,
-            (value) => setState(() => _notifications = value),
-          ),
-        ),
-        _SettingsTile(
-          icon: LucideIcons.timer,
-          title: 'Meta diária',
-          subtitle: 'Tempo mínimo por dia',
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 8,
-            children: [
-              _StepperButton(
-                icon: LucideIcons.minus,
-                backgroundColor: AppColors.cream,
-                iconColor: AppColors.primary,
-                onPressed: _dailyGoalMinutes > _goalMin
-                    ? () => _changeDailyGoal(-_goalStep)
-                    : null,
-              ),
-              SizedBox(
-                width: 52,
-                child: Text(
-                  '${_dailyGoalMinutes}min',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              _StepperButton(
-                icon: LucideIcons.plus,
-                backgroundColor: AppColors.primary,
-                iconColor: Colors.white,
-                onPressed: _dailyGoalMinutes < _goalMax
-                    ? () => _changeDailyGoal(_goalStep)
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildAppSection() {
     return _SettingsCard(
       children: [
@@ -250,24 +173,7 @@ class _SettingsPageState extends State<SettingsPage> {
           title: 'Termos de Uso',
           onTap: () => _openPage(const InfoPage.terms()),
         ),
-        _SettingsTile(
-          icon: LucideIcons.star,
-          title: 'Avaliar o app',
-          onTap: _rateApp,
-        ),
       ],
-    );
-  }
-
-  Widget _buildSwitch(bool value, ValueChanged<bool> onChanged) {
-    return Switch(
-      value: value,
-      onChanged: onChanged,
-      activeThumbColor: Colors.white,
-      activeTrackColor: AppColors.primary,
-      inactiveThumbColor: Colors.white,
-      inactiveTrackColor: AppColors.surfaceBorder,
-      trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
     );
   }
 
@@ -345,17 +251,9 @@ class _SettingsCard extends StatelessWidget {
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle;
-  final Widget? trailing;
   final VoidCallback? onTap;
 
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.trailing,
-    this.onTap,
-  });
+  const _SettingsTile({required this.icon, required this.title, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -368,70 +266,21 @@ class _SettingsTile extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: AppColors.rose),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 2,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      style: const TextStyle(
-                        color: AppColors.rose,
-                        fontSize: 12,
-                      ),
-                    ),
-                ],
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-            trailing ??
-                const Icon(
-                  LucideIcons.chevronRight,
-                  size: 16,
-                  color: AppColors.textTertiary,
-                ),
+            const Icon(
+              LucideIcons.chevronRight,
+              size: 16,
+              color: AppColors.textTertiary,
+            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StepperButton extends StatelessWidget {
-  final IconData icon;
-  final Color backgroundColor;
-  final Color iconColor;
-  final VoidCallback? onPressed;
-
-  const _StepperButton({
-    required this.icon,
-    required this.backgroundColor,
-    required this.iconColor,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: onPressed == null ? 0.4 : 1,
-      child: Material(
-        color: backgroundColor,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 28,
-            height: 28,
-            child: Icon(icon, size: 14, color: iconColor),
-          ),
         ),
       ),
     );

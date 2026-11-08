@@ -11,7 +11,7 @@ class TitleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      maxLines: 2,
+      maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
         fontSize: 16,
