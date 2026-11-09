@@ -2,6 +2,7 @@
 
 import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
+import 'package:bookcase/features/auth/auth_service.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
 import 'package:bookcase/shared/widgets/sub_page_layout.dart';
@@ -25,6 +26,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -46,8 +48,22 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     if (!confirmed || !mounted) return;
 
-    AppAlert.success(context, 'Senha alterada com sucesso!');
-    Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      await AuthService().changePassword(
+        currentPassword: _currentController.text,
+        newPassword: _newController.text,
+      );
+      if (!mounted) return;
+
+      AppAlert.success(context, 'Senha alterada com sucesso!');
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      AppAlert.error(context, e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   Widget _buildPasswordField({
@@ -139,6 +155,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               ButtonDefault(
                 text: 'Salvar nova senha',
                 onPressed: _handleSave,
+                isLoading: _isSaving,
                 width: ButtonWidth.full,
                 size: ButtonSize.lg,
               ),

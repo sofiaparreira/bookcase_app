@@ -36,8 +36,9 @@ class _SettingsPageState extends State<SettingsPage> {
     return initials.isNotEmpty ? initials : _displayName[0].toUpperCase();
   }
 
-  void _openPage(Widget page) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  Future<void> _openPage(Widget page) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+    if (mounted) setState(() {});
   }
 
   Future<void> _confirmSignOut() async {

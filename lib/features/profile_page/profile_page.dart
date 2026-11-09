@@ -23,9 +23,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final _streak = StreakStore.instance;
 
   // Valores mockados até existirem endpoints para eles
-  static const _level = 'Leitor Bronze';
   static const _pagesRead = '1.552';
-  static const _achievements = 3;
 
   AuthUser? _user;
 
@@ -61,11 +59,12 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (_) {}
   }
 
-  void _openSettings() {
-    Navigator.push(
+  Future<void> _openSettings() async {
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const SettingsPage()),
     );
+    if (mounted) setState(() => _user = _authService.currentUser ?? _user);
   }
 
   String get _displayName {
@@ -107,11 +106,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     child: Column(
                       spacing: 16,
-                      children: [
-                        _buildStatsGrid(),
-                        _buildLevelCard(),
-                        _buildMenu(),
-                      ],
+                      children: [_buildStatsGrid(), _buildMenu()],
                     ),
                   ),
                 ),
@@ -168,24 +163,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const Row(
-                      spacing: 6,
-                      children: [
-                        Icon(
-                          LucideIcons.bookOpen,
-                          size: 16,
-                          color: AppColors.secondary,
-                        ),
-                        Text(
-                          _level,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
                     Row(
                       spacing: 4,
                       children: [
@@ -240,89 +217,16 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ],
         ),
-        Row(
-          spacing: 12,
-          children: [
-            Expanded(
-              child: _StatCard(
-                icon: LucideIcons.trophy,
-                value: '$_achievements',
-                label: 'Conquistas',
-                color: AppColors.secondary,
-              ),
-            ),
-            Expanded(
-              child: _StatCard(
-                icon: LucideIcons.flame,
-                value: '$_streakDays',
-                label: 'Dias de streak',
-                color: AppColors.secondary,
-              ),
-            ),
-          ],
+        SizedBox(
+          width: double.infinity,
+          child: _StatCard(
+            icon: LucideIcons.flame,
+            value: '$_streakDays',
+            label: 'Dias de streak',
+            color: AppColors.secondary,
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildLevelCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: AppDecorations.card,
-      child: Column(
-        spacing: 16,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Nível atual',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Row(
-            spacing: 12,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.cream,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  LucideIcons.bookOpen,
-                  size: 22,
-                  color: AppColors.secondary,
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 2,
-                children: [
-                  const Text(
-                    _level,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    '$_achievements conquistas desbloqueadas',
-                    style: const TextStyle(
-                      color: AppColors.textTertiary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 

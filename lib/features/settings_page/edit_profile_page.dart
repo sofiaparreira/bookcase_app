@@ -24,6 +24,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   static final _invalidCharRegex = RegExp(r'[^A-Za-zÀ-ÖØ-öø-ÿ ]');
 
   bool _submitted = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -73,8 +74,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (!confirmed || !mounted) return;
 
-    AppAlert.success(context, 'Perfil atualizado com sucesso!');
-    Navigator.pop(context);
+    setState(() => _isSaving = true);
+    try {
+      await _authService.updateName(_nameController.text);
+      if (!mounted) return;
+
+      AppAlert.success(context, 'Perfil atualizado com sucesso!');
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      AppAlert.error(context, e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -105,6 +117,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ButtonDefault(
                 text: 'Salvar alterações',
                 onPressed: _handleSave,
+                isLoading: _isSaving,
                 width: ButtonWidth.full,
                 size: ButtonSize.lg,
               ),
