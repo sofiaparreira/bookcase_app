@@ -33,6 +33,12 @@ namespace Bookcase.Api.Migrations
                     b.Property<string>("Author")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CurrentPage")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -66,9 +72,6 @@ namespace Bookcase.Api.Migrations
 
                     b.Property<int>("BookId")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("CurrentPage")
                         .HasColumnType("integer");
