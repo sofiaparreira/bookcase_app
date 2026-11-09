@@ -55,7 +55,7 @@ Leitores, estudantes e pessoas que desejam desenvolver ou acompanhar o hábito d
 |---:|---|---|---|
 | 1 | Pelo menos quatro telas com `Navigator.push` e `Navigator.pop` | Atendido | Cadastro, detalhes do livro, formulários e detalhes de metas, busca para lista de compras e configurações. Exemplos em `lib/features/auth/login_page.dart`, `lib/features/search_books/search_books_page.dart`, `lib/features/goals/metas_screen.dart`, `lib/features/shopping_list/shopping_list_page.dart` e `lib/features/settings_page/settings_page.dart`. |
 | 2 | API REST com `http` e `async/await` | Atendido | O pacote `http` está no `pubspec.yaml`. As chamadas estão em `lib/features/auth/auth_service.dart`, `lib/shared/service/book_service.dart`, `lib/shared/service/google_books_service.dart`, `lib/features/goals/goals_service.dart` e `lib/features/shopping_list/shopping_list_service.dart`. |
-| 3 | Loading e erro visíveis na interface | Atendido | Indicadores de carregamento, skeletons, estados vazios, botão de nova tentativa e alertas padronizados aparecem em busca, estante, metas e compras. Ver `lib/shared/widgets/alerts/app_alert.dart`. |
+| 3 | Loading e erro visíveis na interface | Atendido | Indicadores de carregamento, estados vazios, botão de nova tentativa e alertas padronizados aparecem em busca, estante, metas e compras. Ver `lib/shared/widgets/alerts/app_alert.dart`. |
 | 4 | Formulário com `Form` e `validator` | Atendido | Login, cadastro, metas, compras, edição do perfil e alteração de senha usam `GlobalKey<FormState>` e validadores. |
 | 5 | Lista dinâmica com `ListView.builder` | Parcialmente atendido | As listas são dinâmicas e construídas sob demanda com `itemCount` e `itemBuilder`, mas utilizam principalmente `ListView.separated`, uma variação do mesmo padrão. Se a rubrica exigir literalmente `ListView.builder`, será necessário trocar ao menos uma ocorrência. |
 | 6 | Persistência com `SharedPreferences` | Atendido | Sessão, token, e-mail, progresso local e sequência de leitura são persistidos em `lib/features/auth/auth_service.dart`, `lib/features/my_bookshelf/bookshelf_store.dart` e `lib/features/streak/streak_store.dart`. |
@@ -102,14 +102,17 @@ A URL base está definida em `lib/core/config/api_config.dart`.
 | `PUT` | `/api/auth/password` | Sim | Alterar senha |
 | `GET` | `/api/book` | Sim | Listar livros da estante |
 | `GET` | `/api/book?status={status}` | Sim | Filtrar livros por status |
+| `GET` | `/api/book/{id}` | Sim | Buscar um livro da estante |
 | `POST` | `/api/book` | Sim | Adicionar livro à estante |
 | `PUT` | `/api/book/{id}` | Sim | Atualizar status, progresso e avaliação |
 | `DELETE` | `/api/book/{id}` | Sim | Remover livro da estante |
 | `GET` | `/api/shoppinglist` | Sim | Listar itens de compra |
+| `GET` | `/api/shoppinglist/{id}` | Sim | Buscar um item de compra |
 | `POST` | `/api/shoppinglist` | Sim | Criar item de compra |
 | `PUT` | `/api/shoppinglist/{id}` | Sim | Atualizar item de compra |
 | `DELETE` | `/api/shoppinglist/{id}` | Sim | Excluir item de compra |
 | `GET` | `/api/readinggoal` | Sim | Listar metas |
+| `GET` | `/api/readinggoal/{id}` | Sim | Buscar uma meta |
 | `POST` | `/api/readinggoal` | Sim | Criar meta |
 | `PUT` | `/api/readinggoal/{id}` | Sim | Atualizar meta |
 | `PATCH` | `/api/readinggoal/{id}/progress` | Sim | Atualizar progresso da meta |
@@ -122,6 +125,8 @@ Authorization: Bearer <token>
 ```
 
 ### Conta de teste
+
+Disponível apenas na API publicada no Render:
 
 email: teste1@gmail.com
 senha: 12345678
@@ -145,8 +150,8 @@ O banco PostgreSQL do backend está hospedado no Supabase. O fluxo principal de 
 
 ### Pré-requisitos
 
-- Flutter **3.47.9** ou versão compatível.
-- Dart **3.13.7** ou versão compatível com `sdk: ^3.13.2`.
+- Flutter **3.47** ou superior.
+- Dart **3.13.2** ou superior (`sdk: ^3.13.2` no `pubspec.yaml`).
 - Git.
 - Android Studio, emulador Android, navegador ou outro dispositivo compatível com Flutter.
 - Acesso à internet para a API própria e a Google Books API.
@@ -182,24 +187,45 @@ O aplicativo já está configurado para usar a API publicada no Render. Portanto
 
 ## 6. Backend local
 
-O backend é uma API REST em **ASP.NET Core, C# e .NET 10**, com Entity Framework Core, PostgreSQL, autenticação JWT e documentação Swagger.
+O backend é uma API REST em **ASP.NET Core, C# e .NET 10**, com Entity Framework Core, PostgreSQL, autenticação JWT e documentação Swagger. O código está em `backend/Bookcase.Api`.
+
+Rodar o backend localmente é opcional: o aplicativo já usa a API publicada no Render. Os passos abaixo servem para quem quiser executar tudo na própria máquina.
 
 ### Pré-requisitos
 
-- .NET SDK 10.
-- Acesso a um banco PostgreSQL.
-- Connection string válida.
-- Chave JWT com pelo menos 32 caracteres.
+- .NET SDK 10. Verifique com `dotnet --version` (deve começar com `10.`).
+- Um banco PostgreSQL. A forma mais simples é usar o Docker (opção A abaixo).
+- Docker Desktop, caso use a opção A.
 
-Verifique o SDK:
+Os comandos abaixo funcionam no PowerShell, no Prompt de Comando e no terminal do Linux/macOS.
+
+### 1. Subir um banco PostgreSQL
+
+**Opção A — PostgreSQL local com Docker (recomendado):**
 
 ```bash
-dotnet --version
+docker run --name bookcase-db -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:17
 ```
 
-### Instalar dependências e ferramentas
+Connection string correspondente:
 
-A partir da raiz do projeto:
+```text
+Host=localhost;Port=5432;Database=bookcase;Username=postgres;Password=postgres
+```
+
+O banco `bookcase` é criado automaticamente no passo 4.
+
+**Opção B — banco no Supabase:** crie um projeto no Supabase e copie os dados em **Connect → Session pooler**. Nesse caso, a connection string precisa de SSL:
+
+```text
+Host=<host>;Port=5432;Database=postgres;Username=<usuario>;Password=<senha>;SSL Mode=Require;Trust Server Certificate=true
+```
+
+O banco de produção do projeto não é compartilhado. Por isso, o banco local começa vazio e a conta de teste da seção 4 não existe nele: crie uma conta nova pela tela de cadastro do app ou pelo Swagger.
+
+### 2. Instalar dependências e ferramentas
+
+A partir da raiz do repositório:
 
 ```bash
 cd backend/Bookcase.Api
@@ -207,27 +233,33 @@ dotnet restore
 dotnet tool restore
 ```
 
-### Configurar os secrets
+O `dotnet tool restore` instala o `dotnet-ef` na versão definida em `backend/Bookcase.Api/dotnet-tools.json`.
 
-Os dados sensíveis não ficam no repositório. Configure-os com `user-secrets`:
+### 3. Configurar os secrets
+
+Os dados sensíveis não ficam no repositório. Ainda dentro de `backend/Bookcase.Api`, configure-os com `user-secrets`:
 
 ```bash
-dotnet user-secrets set \
-  "ConnectionStrings:DefaultConnection" \
-  "Host=<host>;Port=5432;Database=postgres;Username=<usuario>;Password=<senha>;SSL Mode=Require;Trust Server Certificate=true"
-
-dotnet user-secrets set \
-  "Jwt:Key" \
-  "<chave-longa-com-pelo-menos-32-caracteres>"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=bookcase;Username=postgres;Password=postgres"
 ```
 
-Aplique as migrations:
+```bash
+dotnet user-secrets set "Jwt:Key" "uma-chave-local-qualquer-com-mais-de-32-caracteres"
+```
+
+A chave JWT precisa ter **pelo menos 32 caracteres**, pois os tokens são assinados com HMAC-SHA256. Com uma chave menor, o login falha.
+
+### 4. Criar as tabelas
+
+Ainda dentro de `backend/Bookcase.Api`:
 
 ```bash
 dotnet ef database update
 ```
 
-### Subir o backend
+Esse comando cria o banco (se ainda não existir) e aplica as migrations de `backend/Bookcase.Api/Migrations`.
+
+### 5. Subir a API
 
 A partir da raiz do repositório:
 
@@ -241,28 +273,37 @@ Endereços locais:
 - API: `http://localhost:5094`
 - Swagger: `http://localhost:5094/swagger`
 
-Para parar o backend, pressione `Ctrl+C` no terminal em que ele estiver rodando.
+Abra o Swagger no navegador para confirmar que a API está no ar. Para parar, pressione `Ctrl+C` no terminal em que ela estiver rodando.
 
-### Usar o backend local no Flutter
+### 6. Apontar o Flutter para a API local
 
-Altere temporariamente `lib/core/config/api_config.dart`.
+Altere temporariamente a `baseUrl` em `lib/core/config/api_config.dart`, de acordo com onde o app vai rodar:
 
-Para Flutter Web ou desktop na mesma máquina:
+| Onde o app roda | `baseUrl` |
+|---|---|
+| Flutter Web ou desktop (Windows, macOS, Linux) na mesma máquina | `http://localhost:5094` |
+| Emulador Android | `http://10.0.2.2:5094` |
+| Celular físico na mesma rede Wi-Fi | `http://<ip-do-computador>:5094` |
 
-```dart
-static const String baseUrl = 'http://localhost:5094';
-```
-
-Para o Android Emulator:
+Exemplo para o emulador Android:
 
 ```dart
 static const String baseUrl = 'http://10.0.2.2:5094';
 ```
 
-No Android Emulator, `localhost` aponta para o próprio emulador. O endereço `10.0.2.2` redireciona para a máquina host.
+No emulador Android, `localhost` aponta para o próprio emulador. O endereço `10.0.2.2` redireciona para o computador.
 
-Em um dispositivo físico, use o IP local do computador, permita a porta no firewall e configure o backend para escutar em uma interface acessível pela rede.
+Para usar um celular físico, a API precisa aceitar conexões da rede. Suba-a com:
 
+```bash
+dotnet run --project Bookcase.Api --launch-profile http --urls http://0.0.0.0:5094
+```
+
+Depois, libere a porta `5094` no firewall e use o IP local do computador (no Windows, `ipconfig`; no Linux/macOS, `ip addr` ou `ifconfig`).
+
+Depois dos testes, volte a `baseUrl` para `https://bookcase-api-g9pa.onrender.com`.
+
+A busca de livros continua usando a Google Books API diretamente, então ela precisa de internet mesmo com o backend local.
 
 ### Produção
 

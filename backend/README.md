@@ -11,9 +11,10 @@ Usa **Entity Framework Core** com **PostgreSQL** (hospedado no Supabase) e
 ## Pré-requisitos (para rodar localmente)
 
 - .NET SDK 10 — confira com `dotnet --version`
-- Ferramenta de migrations do EF Core:
+- Ferramenta de migrations do EF Core (versão fixada em `Bookcase.Api/dotnet-tools.json`):
   ```bash
-  dotnet tool install --global dotnet-ef
+  cd backend/Bookcase.Api
+  dotnet tool restore
   ```
 
 ## Configuração (secrets)
@@ -60,9 +61,10 @@ endpoints protegidos. Cada usuário só enxerga e altera os próprios dados.
 | Área | Rotas | Protegido? |
 |---|---|---|
 | Auth | `POST /api/auth/register`, `POST /api/auth/login` | não |
+| Perfil | `GET/PUT /api/auth/me`, `PUT /api/auth/password` | sim |
 | Livros | `GET/POST /api/book`, `GET/PUT/DELETE /api/book/{id}` | sim |
 | Lista de compras | `GET/POST /api/shoppinglist`, `GET/PUT/DELETE /api/shoppinglist/{id}` | sim |
-| Metas | `GET/POST /api/readinggoal`, `GET/PUT/DELETE /api/readinggoal/{id}` | sim |
+| Metas | `GET/POST /api/readinggoal`, `GET/PUT/DELETE /api/readinggoal/{id}`, `PATCH /api/readinggoal/{id}/progress` | sim |
 
 ## Banco de dados (migrations)
 
