@@ -111,6 +111,7 @@ class BookshelfStore extends ChangeNotifier {
           databaseId: apiBook.databaseId,
           status: apiBook.status,
           rating: apiBook.rating,
+          currentPage: apiBook.currentPage,
         ) ??
         apiBook;
     final savedBookProgress = savedProgress[apiBook.databaseId.toString()];
@@ -120,13 +121,16 @@ class BookshelfStore extends ChangeNotifier {
     final savedTotalPages = savedBookProgress is Map
         ? _numberAsInt(savedBookProgress['totalPages'])
         : null;
+    final totalPages = previous != null && previous.totalPages > 0
+        ? previous.totalPages
+        : savedTotalPages ?? apiBook.totalPages;
     final savedShelfBook = ShelfBook(
       book: displayBook,
       status: apiBook.status,
-      progress: previous?.progress ?? savedProgressValue ?? 0,
-      totalPages: previous != null && previous.totalPages > 0
-          ? previous.totalPages
-          : savedTotalPages ?? apiBook.totalPages,
+      progress: totalPages > 0
+          ? (apiBook.currentPage / totalPages).clamp(0.0, 1.0)
+          : previous?.progress ?? savedProgressValue ?? 0,
+      totalPages: totalPages,
       rating: apiBook.rating > 0 ? apiBook.rating.round() : null,
       finishedAt: previous?.finishedAt,
     );
@@ -141,6 +145,14 @@ class BookshelfStore extends ChangeNotifier {
 
   int countWithStatus(EnumBookStatus status) =>
       _books.values.where((shelfBook) => shelfBook.status == status).length;
+
+  int get readPages => _books.values
+      .where(
+        (shelfBook) =>
+            shelfBook.status == EnumBookStatus.reading ||
+            shelfBook.status == EnumBookStatus.finished,
+      )
+      .fold(0, (total, shelfBook) => total + shelfBook.book.currentPage);
 
   ShelfBook? find(Book book) {
     final directMatch = _books[book.id];

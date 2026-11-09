@@ -99,8 +99,13 @@ class BookshelfActions {
     final apiBook = await _statusService.updateStatusBook(
       book: current?.book ?? book.copyWith(databaseId: null),
       status: EnumBookStatus.reading,
+      currentPage: result.currentPage,
     );
-    final displayBook = book.copyWith(databaseId: apiBook.databaseId);
+    final displayBook = book.copyWith(
+      databaseId: apiBook.databaseId,
+      status: EnumBookStatus.reading,
+      currentPage: result.currentPage,
+    );
     _store.save(
       ShelfBook(
         book: displayBook,
@@ -120,8 +125,14 @@ class BookshelfActions {
     final result = await _askProgress(context, shelfBook.book, shelfBook);
     if (result == null) return;
 
+    final apiBook = await _statusService.updateStatusBook(
+      book: shelfBook.book,
+      status: EnumBookStatus.reading,
+      currentPage: result.currentPage,
+    );
     _store.save(
       shelfBook.copyWith(
+        book: apiBook,
         progress: result.progress,
         totalPages: result.totalPages,
       ),
@@ -154,11 +165,14 @@ class BookshelfActions {
       book: current?.book ?? book.copyWith(databaseId: null),
       status: EnumBookStatus.finished,
       rating: result.rating.toDouble(),
+      currentPage: totalPages,
+      completedAt: result.finishedAt,
     );
     final displayBook = book.copyWith(
       databaseId: apiBook.databaseId,
       status: EnumBookStatus.finished,
       rating: result.rating.toDouble(),
+      currentPage: totalPages,
     );
     _store.save(
       ShelfBook(
@@ -183,9 +197,10 @@ class BookshelfActions {
         ? current.totalPages
         : book.totalPages;
 
-    final progress = current?.status == EnumBookStatus.reading
-        ? current!.progress
-        : 0.0;
+    final currentPage = current?.status == EnumBookStatus.reading
+        ? current!.book.currentPage
+        : 0;
+    final progress = totalPages > 0 ? currentPage / totalPages : 0.0;
 
     return showModalBottomSheet<ReadingProgressResult>(
       context: context,
@@ -194,7 +209,7 @@ class BookshelfActions {
       builder: (context) => UpdateReadingProgressModal(
         title: book.title,
         totalPages: totalPages,
-        currentPage: totalPages > 0 ? (progress * totalPages).round() : null,
+        currentPage: currentPage,
         currentPercentage: progress,
       ),
     );

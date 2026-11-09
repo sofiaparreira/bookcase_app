@@ -206,9 +206,11 @@ class _DashboardPageState extends State<DashboardPage> {
                                       text: 'Conquistas',
                                       variant: EnumMetricCardVariant.secondary,
                                     ),
-                                    const MetricCard(
-                                      number: 1552,
-                                      icon: Icon(Icons.description_outlined),
+                                    MetricCard(
+                                      number: BookshelfStore.instance.readPages,
+                                      icon: const Icon(
+                                        Icons.description_outlined,
+                                      ),
                                       text: 'Páginas lidas',
                                       variant: EnumMetricCardVariant.neutral,
                                     ),

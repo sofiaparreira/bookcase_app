@@ -26,6 +26,7 @@ class ShelfBook {
   int get currentPage => (progress * totalPages).round();
 
   ShelfBook copyWith({
+    Book? book,
     EnumBookStatus? status,
     double? progress,
     int? totalPages,
@@ -33,7 +34,7 @@ class ShelfBook {
     DateTime? Function()? finishedAt,
   }) {
     return ShelfBook(
-      book: book,
+      book: book ?? this.book,
       status: status ?? this.status,
       progress: progress ?? this.progress,
       totalPages: totalPages ?? this.totalPages,

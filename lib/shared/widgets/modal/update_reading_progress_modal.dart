@@ -11,10 +11,12 @@ enum ProgressType { pages, percentage }
 class ReadingProgressResult {
   final double progress;
   final int totalPages;
+  final int currentPage;
 
   const ReadingProgressResult({
     required this.progress,
     required this.totalPages,
+    required this.currentPage,
   });
 }
 
@@ -79,6 +81,15 @@ class _UpdateReadingProgressModalState
   }
 
   int get _progressPercent => (_progress * 100).clamp(0, 100).round();
+
+  int get _currentPage {
+    if (selectedType == ProgressType.pages) {
+      return (int.tryParse(pageController.text) ?? 0).clamp(0, totalPages);
+    }
+
+    final percentage = double.tryParse(percentageController.text) ?? 0;
+    return (percentage / 100 * totalPages).round().clamp(0, totalPages);
+  }
 
   void _updateProgress() {
     if (mounted) setState(() {});
@@ -248,6 +259,7 @@ class _UpdateReadingProgressModalState
                     ReadingProgressResult(
                       progress: _progress.clamp(0.0, 1.0),
                       totalPages: totalPages,
+                      currentPage: _currentPage,
                     ),
                   ),
                 ),

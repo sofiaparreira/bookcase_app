@@ -12,6 +12,7 @@ class Book {
   final double? averageRating;
   final int? databaseId;
   final double rating;
+  final int currentPage;
 
   const Book({
     required this.id,
@@ -26,6 +27,7 @@ class Book {
     this.averageRating,
     this.databaseId,
     this.rating = 0,
+    this.currentPage = 0,
   });
 
   static const _unchangedDatabaseId = Object();
@@ -34,9 +36,11 @@ class Book {
     Object? databaseId = _unchangedDatabaseId,
     EnumBookStatus? status,
     double? rating,
+    int? currentPage,
   }) => Book(
     id: id,
     rating: rating ?? this.rating,
+    currentPage: currentPage ?? this.currentPage,
     title: title,
     author: author,
     isbn: isbn,
@@ -58,6 +62,7 @@ class Book {
   Book withExternalMetadata(Book metadata) => Book(
     id: metadata.id,
     rating: rating,
+    currentPage: currentPage,
     title: title,
     author: author,
     isbn: metadata.isbn,
@@ -70,12 +75,20 @@ class Book {
     databaseId: databaseId,
   );
 
-  Map<String, dynamic> toApiJson({EnumBookStatus? status, double? rating}) => {
+  Map<String, dynamic> toApiJson({
+    EnumBookStatus? status,
+    double? rating,
+    int? currentPage,
+    DateTime? completedAt,
+  }) => {
     'rating': rating ?? this.rating,
+    'currentPage': currentPage ?? this.currentPage,
     'title': title,
     'author': author,
     'description': description,
     'status': (status ?? this.status).apiValue,
+    if (completedAt != null)
+      'completedAt': completedAt.toUtc().toIso8601String(),
   };
 
   factory Book.fromGoogleBooks(Map<String, dynamic> json) {
@@ -142,6 +155,7 @@ class Book {
     return Book(
       id: databaseId,
       rating: ((json['rating'] ?? json['Rating']) as num?)?.toDouble() ?? 0,
+      currentPage: _numberAsInt(json['currentPage'] ?? json['CurrentPage']),
       databaseId: databaseId,
       title:
           json['title'] as String? ?? json['Title'] as String? ?? 'Sem título',
@@ -165,6 +179,13 @@ class Book {
     query['zoom'] = '2';
     return uri.replace(scheme: 'https', queryParameters: query).toString();
   }
+
+  static int _numberAsInt(Object? value) => switch (value) {
+    int number => number,
+    num number => number.toInt(),
+    String text => int.tryParse(text) ?? 0,
+    _ => 0,
+  };
 }
 
 // Status de leitura

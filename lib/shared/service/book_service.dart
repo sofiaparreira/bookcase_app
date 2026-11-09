@@ -11,6 +11,8 @@ class BookStatusService {
     required Book book,
     required EnumBookStatus status,
     double? rating,
+    int? currentPage,
+    DateTime? completedAt,
   }) async {
     final token = AuthService().token;
     if (token == null || token.isEmpty) {
@@ -22,7 +24,12 @@ class BookStatusService {
     final url = databaseId == null
         ? Uri.parse('${ApiConfig.baseUrl}/api/book')
         : Uri.parse('${ApiConfig.baseUrl}/api/book/$databaseId');
-    final payload = book.toApiJson(status: status, rating: rating);
+    final payload = book.toApiJson(
+      status: status,
+      rating: rating,
+      currentPage: currentPage,
+      completedAt: completedAt,
+    );
     if (databaseId != null) payload['id'] = databaseId;
 
     final headers = {
@@ -61,11 +68,16 @@ class BookStatusService {
           databaseId: savedId,
           status: status,
           rating: rating,
+          currentPage: currentPage,
         );
       }
 
       if (databaseId != null && response.statusCode == 204) {
-        return book.copyWith(status: status, rating: rating);
+        return book.copyWith(
+          status: status,
+          rating: rating,
+          currentPage: currentPage,
+        );
       }
 
       throw Exception(

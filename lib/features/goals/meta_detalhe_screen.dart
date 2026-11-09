@@ -49,10 +49,7 @@ class _MetaDetalheScreenState extends State<MetaDetalheScreen> {
     );
     if (result == null || !mounted) return;
 
-    final page = (result.progress * _goal.targetPages).round().clamp(
-      0,
-      _goal.targetPages,
-    );
+    final page = result.currentPage.clamp(0, _goal.targetPages);
     if (page == _goal.currentPage) return;
 
     setState(() => _savingProgress = true);
