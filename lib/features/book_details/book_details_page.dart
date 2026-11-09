@@ -6,8 +6,8 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
+import 'package:bookcase/features/shopping_list/shopping_list_actions.dart';
 import 'package:bookcase/models/book.dart';
-import 'package:bookcase/features/shopping_list/shopping_list_page.dart';
 import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/progress/reading_progress_bar.dart';
@@ -84,23 +84,52 @@ class BookDetailsPage extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              IconButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: IconButton.styleFrom(
-                                  fixedSize: const Size.square(40),
-                                  backgroundColor: Colors.white.withValues(
-                                    alpha: 0.16,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  IconButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    style: IconButton.styleFrom(
+                                      fixedSize: const Size.square(40),
+                                      backgroundColor: Colors.white.withValues(
+                                        alpha: 0.16,
+                                      ),
+                                      foregroundColor: Colors.white,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius:
+                                            AppDecorations.buttonBorderRadius,
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                      LucideIcons.arrowLeft,
+                                      size: 20,
+                                    ),
                                   ),
-                                  foregroundColor: Colors.white,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius:
-                                        AppDecorations.buttonBorderRadius,
+                                  IconButton(
+                                    tooltip: 'Adicionar à lista de compras',
+                                    onPressed: () =>
+                                        ShoppingListActions.addBook(
+                                          context,
+                                          book,
+                                        ),
+                                    style: IconButton.styleFrom(
+                                      fixedSize: const Size.square(40),
+                                      backgroundColor: Colors.white.withValues(
+                                        alpha: 0.16,
+                                      ),
+                                      foregroundColor: Colors.white,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius:
+                                            AppDecorations.buttonBorderRadius,
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.add_shopping_cart_rounded,
+                                      size: 21,
+                                    ),
                                   ),
-                                ),
-                                icon: const Icon(
-                                  LucideIcons.arrowLeft,
-                                  size: 20,
-                                ),
+                                ],
                               ),
                               const Spacer(),
                               Row(
@@ -119,6 +148,8 @@ class BookDetailsPage extends StatelessWidget {
                                           TitleH1(
                                             text: book.title,
                                             color: Colors.white,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
 
                                           const SizedBox(height: 8),
@@ -332,32 +363,6 @@ class BookDetailsPage extends StatelessWidget {
                             ],
                           ),
                         ],
-                        const SizedBox(height: 20),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: IconButton.filledTonal(
-                            tooltip: 'Adicionar à lista de compras',
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    ShoppingListPage(initialBook: book),
-                              ),
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: AppColors.primary10,
-                              foregroundColor: AppColors.primary,
-                              minimumSize: const Size.square(48),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: AppDecorations.buttonBorderRadius,
-                              ),
-                            ),
-                            icon: const Icon(
-                              Icons.add_shopping_cart_rounded,
-                              size: 24,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),

@@ -8,7 +8,6 @@ import 'package:bookcase/features/goals/meta_detalhe_screen.dart';
 import 'package:bookcase/features/goals/meta_form_screen.dart';
 import 'package:bookcase/models/reading_goal.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
-import 'package:bookcase/shared/widgets/button/icon_button_default.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -162,11 +161,20 @@ class _MetasScreenState extends State<MetasScreen> {
                             color: Colors.white,
                           ),
                         ),
-                        IconButtonDefault(
+                        IconButton(
                           icon: const Icon(LucideIcons.plus),
                           tooltip: 'Criar nova meta',
-                          variant: ButtonVariant.secondary,
                           onPressed: () => _open(const MetaFormScreen()),
+                          style: IconButton.styleFrom(
+                            fixedSize: const Size.square(40),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.16,
+                            ),
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppDecorations.buttonBorderRadius,
+                            ),
+                          ),
                         ),
                       ],
                     ),

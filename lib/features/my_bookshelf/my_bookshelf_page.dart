@@ -99,26 +99,12 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
                 child: Column(
                   spacing: 12,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const TitleH1(
-                          text: "Minha Estante",
-                          color: Colors.white,
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(LucideIcons.plus),
-                          color: Colors.white,
-                          iconSize: 20,
-                          style: IconButton.styleFrom(
-                            backgroundColor: AppColors.white10,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: AppDecorations.buttonBorderRadius,
-                            ),
-                          ),
-                        ),
-                      ],
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: TitleH1(
+                        text: "Minha Estante",
+                        color: Colors.white,
+                      ),
                     ),
 
                     SearchTextField(

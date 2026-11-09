@@ -80,10 +80,17 @@ class AppBottomNavigation extends StatelessWidget {
                   ),
 
                   _NavigationItem(
-                    icon: LucideIcons.user,
-                    label: 'Perfil',
+                    icon: LucideIcons.shoppingCart,
+                    label: 'Compras',
                     selected: currentIndex == 4,
                     onTap: () => onTap(4),
+                  ),
+
+                  _NavigationItem(
+                    icon: LucideIcons.user,
+                    label: 'Perfil',
+                    selected: currentIndex == 5,
+                    onTap: () => onTap(5),
                   ),
                 ],
               ),
@@ -118,7 +125,7 @@ class _NavigationItem extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           height: 48,
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary : AppColors.cardSurface,
+            color: selected ? AppColors.primary : Colors.transparent,
             borderRadius: AppDecorations.buttonBorderRadius,
           ),
           child: selected

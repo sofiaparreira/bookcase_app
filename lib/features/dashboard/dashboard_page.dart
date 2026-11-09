@@ -4,7 +4,6 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
-import 'package:bookcase/features/shopping_list/shopping_list_page.dart';
 import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
@@ -53,14 +52,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  void _openShoppingList(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ShoppingListPage(onNavigate: widget.onNavigate),
-      ),
-    );
-  }
+  void _openShoppingList() => widget.onNavigate?.call(4);
 
   void _openGoals() {
     widget.onNavigate?.call(3);
@@ -200,12 +192,6 @@ class _DashboardPageState extends State<DashboardPage> {
                                       text: 'Livros lidos',
                                       variant: EnumMetricCardVariant.primary,
                                     ),
-                                    const MetricCard(
-                                      number: 3,
-                                      icon: Icon(Icons.emoji_events_outlined),
-                                      text: 'Conquistas',
-                                      variant: EnumMetricCardVariant.secondary,
-                                    ),
                                     MetricCard(
                                       number: BookshelfStore.instance.readPages,
                                       icon: const Icon(
@@ -242,13 +228,11 @@ class _DashboardPageState extends State<DashboardPage> {
                                     text: 'Ver lista',
                                     variant: ButtonVariant.transparent,
                                     suffixIcon: const Icon(Icons.chevron_right),
-                                    onPressed: () => _openShoppingList(context),
+                                    onPressed: _openShoppingList,
                                   ),
                                 ],
                               ),
-                              _ShoppingListPreview(
-                                onTap: () => _openShoppingList(context),
-                              ),
+                              _ShoppingListPreview(onTap: _openShoppingList),
                             ],
                           ),
                         ),

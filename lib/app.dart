@@ -6,6 +6,7 @@ import 'package:bookcase/features/dashboard/dashboard_page.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/features/my_bookshelf/my_bookshelf_page.dart';
 import 'package:bookcase/features/search_books/search_books_page.dart';
+import 'package:bookcase/features/shopping_list/shopping_list_page.dart';
 import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/shared/widgets/bottom_navigation.dart';
 import 'package:flutter/material.dart';
@@ -50,6 +51,7 @@ class _AppState extends State<App> {
     const MyBookshelfPage(),
     SearchBooksPage(key: ValueKey(searchPageKey)),
     const MetasScreen(),
+    const ShoppingListPage(embeddedInNavigation: true),
     const ProfilePage(),
   ];
 

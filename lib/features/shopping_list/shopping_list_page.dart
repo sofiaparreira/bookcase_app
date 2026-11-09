@@ -8,7 +8,6 @@ import 'package:bookcase/features/shopping_list/add_to_shopping_list_page.dart';
 import 'package:bookcase/features/shopping_list/shopping_list_service.dart';
 import 'package:bookcase/models/shopping_list_item.dart';
 import 'package:bookcase/models/book.dart';
-import 'package:bookcase/shared/widgets/bottom_navigation.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
@@ -18,10 +17,14 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class ShoppingListPage extends StatefulWidget {
-  final ValueChanged<int>? onNavigate;
   final Book? initialBook;
+  final bool embeddedInNavigation;
 
-  const ShoppingListPage({super.key, this.onNavigate, this.initialBook});
+  const ShoppingListPage({
+    super.key,
+    this.initialBook,
+    this.embeddedInNavigation = false,
+  });
 
   @override
   State<ShoppingListPage> createState() => _ShoppingListPageState();
@@ -83,11 +86,6 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
 
   String _formatPrice(double price) {
     return 'R\$ ${price.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
-  void _navigateTo(int index) {
-    widget.onNavigate?.call(index);
-    if (Navigator.canPop(context)) Navigator.pop(context);
   }
 
   Future<void> _openAddBookSearch() async {
@@ -324,18 +322,17 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     return Scaffold(
       extendBody: true,
       backgroundColor: AppColors.primary,
-      bottomNavigationBar: AppBottomNavigation(
-        currentIndex: 0,
-        onTap: _navigateTo,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddBookSearch,
-        tooltip: 'Adicionar livro',
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 5,
-        shape: const CircleBorder(),
-        child: const Icon(LucideIcons.plus, size: 26),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: widget.embeddedInNavigation ? 72 : 0),
+        child: FloatingActionButton(
+          onPressed: _openAddBookSearch,
+          tooltip: 'Adicionar livro',
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 5,
+          shape: const CircleBorder(),
+          child: const Icon(LucideIcons.plus, size: 26),
+        ),
       ),
       body: Container(
         decoration: AppDecorations.header,
