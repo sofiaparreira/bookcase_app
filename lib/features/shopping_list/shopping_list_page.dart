@@ -4,6 +4,7 @@ import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/core/theme/app_shadow.dart';
+import 'package:bookcase/features/shopping_list/add_to_shopping_list_page.dart';
 import 'package:bookcase/features/shopping_list/shopping_list_service.dart';
 import 'package:bookcase/models/shopping_list_item.dart';
 import 'package:bookcase/models/book.dart';
@@ -11,6 +12,7 @@ import 'package:bookcase/shared/widgets/bottom_navigation.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
+import 'package:bookcase/shared/widgets/text_field/search_text_field.dart';
 import 'package:bookcase/shared/widgets/text_field/text_field_default.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -30,6 +32,10 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
 
   List<ShoppingListItem> items = [];
   bool isLoading = true;
+  int _selectedTab = 0;
+
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
 
   int get _pendingItems => items.where((item) => !item.bought).length;
 
@@ -37,15 +43,42 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
       .where((item) => !item.bought)
       .fold(0, (total, item) => total + item.price);
 
+  List<ShoppingListItem> get _toBuyItems =>
+      _applySearch(items.where((item) => !item.bought));
+
+  List<ShoppingListItem> get _acquiredItems =>
+      _applySearch(items.where((item) => item.bought));
+
+  List<ShoppingListItem> _applySearch(Iterable<ShoppingListItem> source) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return source.toList();
+    return source
+        .where(
+          (item) =>
+              item.title.toLowerCase().contains(query) ||
+              (item.author?.toLowerCase().contains(query) ?? false),
+        )
+        .toList();
+  }
+
   @override
   void initState() {
     super.initState();
     loadItems();
+    _searchCtrl.addListener(() {
+      if (mounted) setState(() => _searchQuery = _searchCtrl.text);
+    });
     if (widget.initialBook != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openForm(initialBook: widget.initialBook);
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   String _formatPrice(double price) {
@@ -55,6 +88,16 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
   void _navigateTo(int index) {
     widget.onNavigate?.call(index);
     if (Navigator.canPop(context)) Navigator.pop(context);
+  }
+
+  Future<void> _openAddBookSearch() async {
+    final added = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddToShoppingListPage()),
+    );
+    if (added == true) {
+      await loadItems();
+    }
   }
 
   Future<void> _openForm({
@@ -286,7 +329,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
         onTap: _navigateTo,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _openForm,
+        onPressed: _openAddBookSearch,
         tooltip: 'Adicionar livro',
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
@@ -320,6 +363,11 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                         fontSize: 14,
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    SearchTextField(
+                      label: 'Buscar na lista...',
+                      controller: _searchCtrl,
+                    ),
                   ],
                 ),
               ),
@@ -349,71 +397,147 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
       );
     }
 
-    if (items.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(32, 24, 32, 112),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary10,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.shoppingBag,
+    final tabItems = _selectedTab == 0 ? _toBuyItems : _acquiredItems;
+
+    return Column(
+      children: [
+        _buildTabSelector(),
+        Expanded(
+          child: tabItems.isEmpty
+              ? _buildTabEmptyState()
+              : RefreshIndicator(
                   color: AppColors.primary,
-                  size: 30,
+                  onRefresh: loadItems,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 124),
+                    itemCount: tabItems.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) => _ShoppingItemCard(
+                      item: tabItems[index],
+                      formattedPrice: _formatPrice(tabItems[index].price),
+                      onTap: () => _openForm(existing: tabItems[index]),
+                      onToggle: () => _toggleBought(tabItems[index]),
+                      onDelete: () => _deleteItem(tabItems[index]),
+                    ),
+                  ),
                 ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabSelector() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppColors.surfaceBorder),
+        ),
+        child: Row(
+          children: [
+            _buildTabButton(
+              label: 'Para comprar',
+              icon: LucideIcons.shoppingBag,
+              index: 0,
+            ),
+            _buildTabButton(
+              label: 'Adquiridos',
+              icon: LucideIcons.check,
+              index: 1,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabButton({
+    required String label,
+    required IconData icon,
+    required int index,
+  }) {
+    final selected = _selectedTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTab = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: selected ? Colors.white : AppColors.textSecondary,
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'Sua lista está vazia',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected ? Colors.white : AppColors.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Adicione os livros que você quer comprar e acompanhe tudo por aqui.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ButtonDefault(
-                text: 'Adicionar primeiro livro',
-                prefixIcon: const Icon(LucideIcons.plus, size: 18),
-                onPressed: _openForm,
               ),
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    return RefreshIndicator(
-      color: AppColors.primary,
-      onRefresh: loadItems,
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 124),
-        itemCount: items.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (context, index) => _ShoppingItemCard(
-          item: items[index],
-          formattedPrice: _formatPrice(items[index].price),
-          onTap: () => _openForm(existing: items[index]),
-          onToggle: () => _toggleBought(items[index]),
-          onDelete: () => _deleteItem(items[index]),
+  Widget _buildTabEmptyState() {
+    final isSearching = _searchQuery.trim().isNotEmpty;
+    final isToBuy = _selectedTab == 0;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(32, 24, 32, 112),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSearching
+                  ? LucideIcons.search
+                  : (isToBuy ? LucideIcons.shoppingBag : LucideIcons.check),
+              size: 40,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isSearching
+                  ? 'Nenhum resultado'
+                  : (isToBuy ? 'Nada para comprar' : 'Nenhum livro adquirido'),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isSearching
+                  ? 'Nenhum livro corresponde à sua busca.'
+                  : (isToBuy
+                        ? 'Adicione livros que você quer comprar.'
+                        : 'Marque itens como adquiridos para vê-los aqui.'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
       ),
     );

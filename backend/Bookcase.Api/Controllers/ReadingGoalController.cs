@@ -49,7 +49,6 @@ public class ReadingGoalController : ControllerBase
 
         var bookExists = await _context.Books.AnyAsync(b => b.Id == goal.BookId && b.UserId == userId);
         if (!bookExists) return BadRequest("Livro não encontrado.");
-        goal.CompletedAt = null;
 
         _context.ReadingGoals.Add(goal);
         await _context.SaveChangesAsync();
@@ -88,7 +87,6 @@ public class ReadingGoalController : ControllerBase
         existingGoal.CurrentPage = Math.Max(goal.CurrentPage, 0);
         existingGoal.StartDate = goal.StartDate;
         existingGoal.EndDate = goal.EndDate;
-        UpdateCompletion(existingGoal);
 
         await _context.SaveChangesAsync();
         return NoContent();
@@ -104,7 +102,6 @@ public class ReadingGoalController : ControllerBase
         if (goal == null || goal.UserId != GetUserId()) return NotFound();
 
         goal.CurrentPage = dto.CurrentPage;
-        UpdateCompletion(goal);
 
         await _context.SaveChangesAsync();
         return Ok(goal);
@@ -124,12 +121,4 @@ public class ReadingGoalController : ControllerBase
 
     private Task<bool> UserOwnsBook(int bookId, int userId) =>
         _context.Books.AnyAsync(b => b.Id == bookId && b.UserId == userId);
-
-    private static void UpdateCompletion(ReadingGoal goal)
-    {
-        if (goal.CurrentPage >= goal.TargetPages)
-            goal.CompletedAt ??= DateTime.UtcNow;
-        else
-            goal.CompletedAt = null;
-    }
 }

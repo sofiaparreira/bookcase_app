@@ -101,4 +101,38 @@ public class AuthController : ControllerBase
 
         return Ok(new { user.Id, user.Name, user.Email, user.CreatedAt });
     }
+
+    // PUT api/auth/me (Atualiza o nome do usuário autenticado)
+    [Authorize]
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMe(UpdateUserDto dto)
+    {
+        var user = await _context.Users.FindAsync(GetUserId());
+        if (user == null) return NotFound();
+
+        user.Name = dto.Name;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { user.Id, user.Name, user.Email, user.CreatedAt });
+    }
+
+    // PUT api/auth/password (Troca a senha do usuário autenticado)
+    [Authorize]
+    [HttpPut("password")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+    {
+        var user = await _context.Users.FindAsync(GetUserId());
+        if (user == null) return NotFound();
+
+        if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+            return BadRequest(new { message = "Senha atual incorreta." });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    private int GetUserId() =>
+        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub")!);
 }

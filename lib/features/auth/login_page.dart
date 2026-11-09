@@ -63,95 +63,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _showForgotPasswordDialog() {
-    final resetEmailController = TextEditingController(
-      text: _emailController.text,
-    );
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: AppColors.background,
-          icon: const Icon(
-            Icons.lock_reset_rounded,
-            color: AppColors.primary,
-            size: 32,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text(
-            'Recuperar senha',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Digite seu e-mail para receber as instruções de recuperação.',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
-              TextFieldDefault(
-                label: 'E-mail',
-                hintText: 'seu@email.com',
-                controller: resetEmailController,
-                keyboardType: TextInputType.emailAddress,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: TextButton.styleFrom(
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppDecorations.buttonBorderRadius,
-                ),
-              ),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppDecorations.buttonBorderRadius,
-                ),
-              ),
-              onPressed: () async {
-                final email = resetEmailController.text.trim();
-                if (email.isEmpty) return;
-
-                Navigator.pop(ctx);
-                try {
-                  await _authService.sendPasswordResetEmail(email);
-                  if (!mounted) return;
-                  AppAlert.success(
-                    context,
-                    'E-mail de recuperação enviado com sucesso!',
-                  );
-                } catch (e) {
-                  if (!mounted) return;
-                  AppAlert.error(
-                    context,
-                    'Erro ao enviar e-mail de recuperação.',
-                  );
-                }
-              },
-              child: const Text('Enviar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -274,23 +185,6 @@ class _LoginPageState extends State<LoginPage> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 10),
-
-                          // ESQUECEU A SENHA?
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: _showForgotPasswordDialog,
-                              child: const Text(
-                                'Esqueceu a senha?',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
                           const SizedBox(height: 24),
 
                           // BOTÃO ENTRAR
@@ -300,55 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                             isLoading: _isLoading,
                             onPressed: _handleLogin,
                           ),
-                          const SizedBox(height: 20),
-
-                          // DIVISOR "ou"
-                          const Row(
-                            children: [
-                              Expanded(
-                                child: Divider(
-                                  color: AppColors.border,
-                                  thickness: 1,
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  'ou',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textTertiary,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Divider(
-                                  color: AppColors.border,
-                                  thickness: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-
-                          // BOTÃO CONTINUAR COM GOOGLE
-                          ButtonDefault(
-                            text: 'Continuar com Google',
-                            variant: ButtonVariant.secondary,
-                            width: ButtonWidth.full,
-                            prefixIcon: const Icon(
-                              LucideIcons.globe,
-                              size: 18,
-                              color: AppColors.textPrimary,
-                            ),
-                            onPressed: () {
-                              AppAlert.info(
-                                context,
-                                'Login social em desenvolvimento.',
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 24),
 
                           // RODAPÉ CADASTRE-SE
                           Row(
