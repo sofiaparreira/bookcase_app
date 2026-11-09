@@ -181,6 +181,77 @@ class AuthService {
     }
   }
 
+  Future<AuthUser> updateName(String name) async {
+    if (_token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/me');
+
+    final response = await http.put(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+      body: jsonEncode({'name': name.trim()}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final user = AuthUser.fromJson(data);
+      _currentUser = AuthUser(
+        id: user.id ?? _currentUser?.id,
+        name: user.name,
+        email: user.email.isNotEmpty ? user.email : _currentUser?.email ?? '',
+      );
+      return _currentUser!;
+    } else if (response.statusCode == 401) {
+      throw Exception('Sessão expirada. Faça login novamente.');
+    } else {
+      throw Exception(
+        'Erro ao atualizar o nome (código ${response.statusCode}).',
+      );
+    }
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    if (_token == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/password');
+
+    final response = await http.put(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+      body: jsonEncode({
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
+    } else if (response.statusCode == 400) {
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
+      final message = data is Map ? data['message'] : null;
+      throw Exception(message ?? 'Não foi possível alterar a senha.');
+    } else if (response.statusCode == 401) {
+      throw Exception('Sessão expirada. Faça login novamente.');
+    } else {
+      throw Exception(
+        'Erro ao alterar a senha (código ${response.statusCode}).',
+      );
+    }
+  }
+
   Future<void> signOut() async {
     _token = null;
     _currentUser = null;
