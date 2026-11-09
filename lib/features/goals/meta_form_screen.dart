@@ -26,7 +26,6 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
   final _service = GoalsService();
   late final TextEditingController _tituloCtrl;
   late final TextEditingController _totalCtrl;
-  late final TextEditingController _atualCtrl;
   List<Book> _books = [];
   bool _loadingBooks = true;
   String? _booksError;
@@ -41,10 +40,12 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
     final g = widget.goal;
     _tituloCtrl = TextEditingController(text: g?.title ?? '');
     _totalCtrl = TextEditingController(text: g?.targetPages.toString() ?? '');
-    _atualCtrl = TextEditingController(text: (g?.currentPage ?? 0).toString());
     _bookId = g?.bookId;
-    _start = g?.startDate ?? DateTime.now();
-    _end = g?.endDate ?? DateTime.now().add(const Duration(days: 30));
+    _start = g?.startDate ?? DateUtils.dateOnly(DateTime.now());
+    _end = initialGoalPickerDate(
+      selectedDate: g?.endDate ?? _start.add(const Duration(days: 30)),
+      isStart: false,
+    );
     _loadBooks();
   }
 
@@ -78,18 +79,51 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
   void dispose() {
     _tituloCtrl.dispose();
     _totalCtrl.dispose();
-    _atualCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _pickDate({required bool isStart}) async {
+    final selectedDate = isStart ? _start : _end;
+    final firstDate = firstSelectableGoalDate(isStart: isStart);
+    final today = firstSelectableGoalDate(isStart: false);
     final picked = await showDatePicker(
       context: context,
-      initialDate: isStart ? _start : _end,
-      firstDate: DateTime(2020),
+      initialDate: initialGoalPickerDate(
+        selectedDate: selectedDate,
+        isStart: isStart,
+      ),
+      firstDate: firstDate,
       lastDate: DateTime(2100),
+      currentDate: today,
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
+      selectableDayPredicate: isStart
+          ? null
+          : (date) => isSelectableGoalEndDate(date, now: today),
+      locale: const Locale('pt', 'BR'),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.primary,
+            onPrimary: Colors.white,
+            onSurface: AppColors.textPrimary,
+          ),
+          datePickerTheme: DatePickerThemeData(
+            backgroundColor: AppColors.background,
+            headerBackgroundColor: AppColors.primary,
+            headerForegroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+          ),
+        ),
+        child: child!,
+      ),
     );
     if (picked == null || !mounted) return;
+    if (!isStart && !isSelectableGoalEndDate(picked, now: today)) {
+      AppAlert.error(context, 'Selecione hoje ou uma data futura.');
+      return;
+    }
     setState(() {
       if (isStart) {
         _start = picked;
@@ -99,19 +133,41 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
     });
   }
 
+  Book? get _selectedBook {
+    for (final book in _books) {
+      if (book.databaseId == _bookId) return book;
+    }
+    return null;
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!isSelectableGoalEndDate(_end)) {
+      AppAlert.error(context, 'A data final não pode ser anterior a hoje.');
+      return;
+    }
     if (_end.isBefore(_start)) {
       AppAlert.error(context, 'A data final deve ser depois da inicial.');
       return;
     }
 
+    final selectedBook = _selectedBook;
+    if (selectedBook == null) {
+      AppAlert.error(context, 'Selecione um livro válido para a meta.');
+      return;
+    }
+
+    final targetPages = int.parse(_totalCtrl.text);
+
     final goal = ReadingGoal(
       id: widget.goal?.id,
       title: _tituloCtrl.text.trim(),
       bookId: _bookId!,
-      targetPages: int.parse(_totalCtrl.text),
-      currentPage: int.parse(_atualCtrl.text),
+      targetPages: targetPages,
+      currentPage: currentPageForGoal(
+        book: selectedBook,
+        targetPages: targetPages,
+      ),
       startDate: _start,
       endDate: _end,
     );
@@ -131,17 +187,55 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
     }
   }
 
-  Widget _dateField(String label, DateTime value, bool isStart) {
-    return InkWell(
-      onTap: _saving ? null : () => _pickDate(isStart: isStart),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-          suffixIcon: const Icon(Icons.calendar_today),
+  Widget _dateField({
+    required String label,
+    required DateTime value,
+    required bool isStart,
+  }) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: AppColors.border),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+          ),
         ),
-        child: Text(formatDate(value)),
-      ),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: _saving ? null : () => _pickDate(isStart: isStart),
+          borderRadius: BorderRadius.circular(12),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: border,
+              enabledBorder: border,
+              suffixIcon: const Icon(
+                Icons.calendar_month_outlined,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            child: Text(
+              formatDate(value),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -202,6 +296,14 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
             initialValue: _bookId,
             isExpanded: true,
             hint: const Text('Selecione um livro'),
+            dropdownColor: AppColors.background,
+            borderRadius: BorderRadius.circular(18),
+            elevation: 6,
+            menuMaxHeight: 320,
+            icon: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: AppColors.primary,
+            ),
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -217,11 +319,94 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
                 ),
               ),
             ),
+            selectedItemBuilder: (context) => _books
+                .map(
+                  (book) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      book.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
             items: _books
                 .map(
-                  (b) => DropdownMenuItem<int>(
-                    value: b.databaseId,
-                    child: Text(b.title, overflow: TextOverflow.ellipsis),
+                  (book) => DropdownMenuItem<int>(
+                    value: book.databaseId,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: book.databaseId == _bookId
+                            ? AppColors.primary10
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary10,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.menu_book_rounded,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  book.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (book.author.trim().isNotEmpty)
+                                  Text(
+                                    book.author,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (book.databaseId == _bookId)
+                            const Padding(
+                              padding: EdgeInsets.only(left: 8),
+                              child: Icon(
+                                Icons.check_rounded,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 )
                 .toList(),
@@ -269,25 +454,13 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
               },
             ),
             const SizedBox(height: 16),
-            TextFieldDefault(
-              controller: _atualCtrl,
-              keyboardType: TextInputType.number,
-              label: 'Página atual',
-
-              validator: (v) {
-                final n = int.tryParse(v ?? '');
-                if (n == null || n < 0) return 'Informe 0 ou mais';
-                final total = int.tryParse(_totalCtrl.text);
-                if (total != null && n > total) {
-                  return 'Não pode ser maior que o total de páginas';
-                }
-                return null;
-              },
+            _dateField(label: 'Data de início', value: _start, isStart: true),
+            const SizedBox(height: 16),
+            _dateField(
+              label: 'Data final (prazo)',
+              value: _end,
+              isStart: false,
             ),
-            const SizedBox(height: 16),
-            _dateField('Data de início', _start, true),
-            const SizedBox(height: 16),
-            _dateField('Data final (prazo)', _end, false),
             const SizedBox(height: 24),
             ButtonDefault(
               text: editando ? 'Salvar alterações' : 'Criar meta',
