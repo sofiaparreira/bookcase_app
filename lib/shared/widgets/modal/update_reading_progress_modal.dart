@@ -18,6 +18,13 @@ class ReadingProgressResult {
     required this.totalPages,
     required this.currentPage,
   });
+
+  static bool isProgressComplete(double progress) =>
+      (progress.clamp(0.0, 1.0) * 100).round() >= 100;
+
+  bool get isComplete =>
+      isProgressComplete(progress) ||
+      (totalPages > 0 && currentPage >= totalPages);
 }
 
 class UpdateReadingProgressModal extends StatefulWidget {

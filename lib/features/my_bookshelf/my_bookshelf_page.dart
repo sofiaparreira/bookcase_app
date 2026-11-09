@@ -8,6 +8,7 @@ import 'package:bookcase/models/book.dart';
 import 'package:bookcase/models/shelf_book.dart';
 import 'package:bookcase/shared/widgets/button/button_status_book.dart';
 import 'package:bookcase/shared/widgets/card/shelf_book_card.dart';
+import 'package:bookcase/shared/widgets/modal/update_reading_progress_modal.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
 import 'package:bookcase/shared/widgets/text_field/search_text_field.dart';
 import 'package:flutter/material.dart';
@@ -195,8 +196,18 @@ class _MyBookshelfPageState extends State<MyBookshelfPage> {
                                               context,
                                               shelfBook,
                                             ),
-                                        onProgressChanged: (progress) => store
-                                            .updateProgress(book, progress),
+                                        onProgressChanged: (progress) {
+                                          if (ReadingProgressResult.isProgressComplete(
+                                            progress,
+                                          )) {
+                                            BookshelfActions.finishReading(
+                                              context,
+                                              book,
+                                            );
+                                            return;
+                                          }
+                                          store.updateProgress(book, progress);
+                                        },
                                         onFinish: () =>
                                             BookshelfActions.finishReading(
                                               context,

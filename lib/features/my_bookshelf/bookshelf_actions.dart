@@ -94,7 +94,10 @@ class BookshelfActions {
   static Future<bool> startReading(BuildContext context, Book book) async {
     final current = _store.find(book);
     final result = await _askProgress(context, book, current);
-    if (result == null) return false;
+    if (result == null || !context.mounted) return false;
+    if (result.isComplete) {
+      return finishReading(context, book);
+    }
 
     final apiBook = await _statusService.updateStatusBook(
       book: current?.book ?? book.copyWith(databaseId: null),
@@ -123,7 +126,11 @@ class BookshelfActions {
     ShelfBook shelfBook,
   ) async {
     final result = await _askProgress(context, shelfBook.book, shelfBook);
-    if (result == null) return;
+    if (result == null || !context.mounted) return;
+    if (result.isComplete) {
+      await finishReading(context, shelfBook.book);
+      return;
+    }
 
     final apiBook = await _statusService.updateStatusBook(
       book: shelfBook.book,
