@@ -53,7 +53,15 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
       final books = await BookStatusService().getBooksForCurrentUser();
       if (!mounted) return;
       setState(() {
-        _books = books.where((b) => b.databaseId != null).toList();
+                _books = books
+            .where(
+              (b) =>
+                  b.databaseId != null &&
+                  (b.status == EnumBookStatus.reading ||
+                      b.status == EnumBookStatus.finished ||
+                      b.databaseId == _bookId),
+            )
+            .toList();
         if (!_books.any((b) => b.databaseId == _bookId)) _bookId = null;
         _loadingBooks = false;
       });
@@ -185,8 +193,8 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
           )
         else if (_books.isEmpty)
           const Text(
-            'Você ainda não tem livros na estante. '
-            'Adicione um livro antes de criar uma meta.',
+            'Você ainda não tem livros lidos ou em leitura. '
+            'Marque um livro como "Lendo" ou "Lido" na estante antes de criar uma meta.',
             style: TextStyle(color: AppColors.textSecondary),
           )
         else

@@ -16,6 +16,10 @@ import 'package:bookcase/shared/widgets/text/title_h2.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:bookcase/features/goals/goal_utils.dart';
+import 'package:bookcase/features/goals/goals_service.dart';
+import 'package:bookcase/models/reading_goal.dart';
+import 'package:bookcase/features/goals/goals_sync.dart';
 
 class DashboardPage extends StatefulWidget {
   final ValueChanged<int>? onNavigate;
@@ -30,6 +34,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    GoalsSync.instance.start();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadSummary();
     });
@@ -92,7 +97,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
               Expanded(
                 child: RefreshIndicator(
-                  onRefresh: () => _loadSummary(refresh: true),
+                  onRefresh: () {
+                    GoalsService.changes.value++; // força a home recarregar, caso esteja aberta
+                    return _loadSummary(refresh: true);
+                  },
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
@@ -349,15 +357,59 @@ class _ReadingCarouselState extends State<_ReadingCarousel> {
   }
 }
 
-class _GoalPreview extends StatelessWidget {
+class _GoalPreview extends StatefulWidget {
   final VoidCallback onTap;
 
   const _GoalPreview({required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
-    const progress = 8 / 12;
+  State<_GoalPreview> createState() => _GoalPreviewState();
+}
 
+class _GoalPreviewState extends State<_GoalPreview> {
+  ReadingGoal? _goal;
+  bool _loading = true;
+  bool _error = false;
+
+  @override
+  void initState() {
+    super.initState();
+    GoalsService.changes.addListener(_load);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    GoalsService.changes.removeListener(_load);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final goals = await GoalsService().getGoals();
+      // Meta em andamento com o prazo mais próximo; se todas estiverem
+      // concluídas, mostra a última da lista.
+      final open = goals.where((g) => !g.isCompleted).toList()
+        ..sort((a, b) => a.endDate.compareTo(b.endDate));
+      final goal = open.isNotEmpty
+          ? open.first
+          : (goals.isNotEmpty ? goals.last : null);
+      if (!mounted) return;
+      setState(() {
+        _goal = goal;
+        _error = false;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = true;
+        _loading = false;
+      });
+    }
+  }
+
+  Widget _card({required Widget child}) {
     return Container(
       decoration: AppDecorations.card,
       child: Material(
@@ -365,110 +417,170 @@ class _GoalPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+          onTap: widget.onTap,
+          child: Padding(padding: const EdgeInsets.all(16), child: child),
+        ),
+      ),
+    );
+  }
+
+  Widget _icon() {
+    return Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.primary10,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Icon(LucideIcons.target, size: 21, color: AppColors.primary),
+    );
+  }
+
+  Widget _message(String title, String subtitle) {
+    return _card(
+      child: Row(
+        children: [
+          _icon(),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary10,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        LucideIcons.target,
-                        size: 21,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Ler 12 livros em 2026',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              height: 1.25,
-                            ),
-                          ),
-                          SizedBox(height: 5),
-                          Row(
-                            children: [
-                              Icon(
-                                LucideIcons.calendarDays,
-                                size: 13,
-                                color: AppColors.textTertiary,
-                              ),
-                              SizedBox(width: 5),
-                              Text(
-                                'Até 31/12/2026',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      LucideIcons.chevronRight,
-                      size: 20,
-                      color: AppColors.textTertiary,
-                    ),
-                  ],
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 18),
-                const Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '8 de 12 livros',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '67%',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: const LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 9,
-                    color: AppColors.primary,
-                    backgroundColor: AppColors.surfaceBorder,
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-        ),
+          const Icon(
+            LucideIcons.chevronRight,
+            size: 20,
+            color: AppColors.textTertiary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return _message('Carregando meta...', 'Aguarde um instante');
+    }
+    if (_error) {
+      return _message(
+        'Não foi possível carregar a meta',
+        'Toque para abrir suas metas',
+      );
+    }
+    final goal = _goal;
+    if (goal == null) {
+      return _message(
+        'Você ainda não tem metas',
+        'Toque para criar sua primeira meta',
+      );
+    }
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _icon(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      goal.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        const Icon(
+                          LucideIcons.calendarDays,
+                          size: 13,
+                          color: AppColors.textTertiary,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Até ${formatDate(goal.endDate)}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                LucideIcons.chevronRight,
+                size: 20,
+                color: AppColors.textTertiary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Página ${goal.currentPage} de ${goal.targetPages}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                '${goal.progressPercent}%',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: goal.progress,
+              minHeight: 9,
+              color: AppColors.primary,
+              backgroundColor: AppColors.surfaceBorder,
+            ),
+          ),
+        ],
       ),
     );
   }
