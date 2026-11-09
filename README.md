@@ -347,12 +347,8 @@ bookcase_app/
 
 ### Limitações e pendências conhecidas
 
-1. O projeto usa estado reativo com `ChangeNotifier`, `ValueNotifier` e `ListenableBuilder`, mas ainda não utiliza o pacote `provider`, solicitado literalmente pelo enunciado.
-2. As listas dinâmicas usam `ListView.separated`; caso a avaliação exija a classe exata, deve-se incluir uma ocorrência de `ListView.builder`.
-3. O teste geral de widgets possui uma falha por timers pendentes de sincronização e alertas, embora o projeto passe no `flutter analyze` e os testes específicos de progresso estejam aprovados.
-4. O serviço gratuito do Render pode levar alguns segundos para responder após um período sem uso.
-5. O aplicativo depende de internet e não oferece modo offline completo para estante, metas e compras.
-6. Não há conta de demonstração ou dados pré-carregados. O avaliador deve criar uma conta pelo próprio aplicativo.
-7. A URL da API está fixa em `ApiConfig`; ainda não há flavors ou configuração por ambiente.
+
+1. O serviço gratuito do Render pode levar alguns segundos para responder após um período sem uso.
+2. O aplicativo depende de internet e não oferece modo offline completo para estante, metas e compras.
 
 
