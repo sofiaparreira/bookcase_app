@@ -330,21 +330,6 @@ bookcase_app/
 
 ## 8. Observações
 
-### Funcionalidades adicionais
-
-- Autenticação com JWT e senhas armazenadas com hash BCrypt.
-- Backend próprio com PostgreSQL, Entity Framework Core, migrations e Swagger.
-- Pesquisa externa com a Google Books API.
-- CRUD de livros, metas e lista de compras.
-- Edição de perfil e alteração de senha.
-- Atualização de progresso por páginas ou porcentagem.
-- Conclusão automática ao chegar a 100%, seguida de avaliação e data de conclusão.
-- Sincronização entre o progresso do livro e metas associadas.
-- Sequência de dias de leitura persistida por usuário.
-- Pull-to-refresh, filtros, buscas locais e estados vazios.
-- Alertas e componentes visuais reutilizáveis.
-- Interface em português do Brasil.
-
 ### Limitações e pendências conhecidas
 
 
