@@ -35,3 +35,25 @@ bool isSelectableGoalEndDate(DateTime date, {DateTime? now}) {
   final candidate = DateTime(date.year, date.month, date.day);
   return !candidate.isBefore(today);
 }
+
+String? allBookPagesOptionLabel(int totalPages) =>
+    totalPages > 0 ? 'Todas as páginas do livro ($totalPages)' : null;
+
+bool isUsingAllBookPages(bool? value) => value ?? false;
+
+int resolveBookTotalPages({
+  required int savedTotal,
+  required int metadataTotal,
+}) => savedTotal > 0 ? savedTotal : metadataTotal;
+
+bool isEligibleGoalBookStatus(EnumBookStatus status) =>
+    status == EnumBookStatus.reading || status == EnumBookStatus.want;
+
+int? goalTargetPages({
+  required String typedValue,
+  required bool useAllBookPages,
+  required int bookTotalPages,
+}) {
+  if (useAllBookPages && bookTotalPages > 0) return bookTotalPages;
+  return int.tryParse(typedValue.trim());
+}

@@ -2,10 +2,11 @@
 
 import 'package:bookcase/features/goals/goal_utils.dart';
 import 'package:bookcase/features/goals/goals_service.dart';
+import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/models/reading_goal.dart';
-import 'package:bookcase/shared/service/book_service.dart';
+import 'package:bookcase/shared/service/google_books_service.dart';
 import 'package:bookcase/shared/widgets/alerts/app_alert.dart';
 import 'package:bookcase/shared/widgets/sub_page_layout.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
@@ -30,6 +31,9 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
   bool _loadingBooks = true;
   String? _booksError;
   int? _bookId;
+  Map<int, int>? _bookTotalPages;
+  bool? _useAllBookPages;
+  String? _manualTargetPages;
   late DateTime _start;
   late DateTime _end;
   bool _saving = false;
@@ -40,6 +44,7 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
     final g = widget.goal;
     _tituloCtrl = TextEditingController(text: g?.title ?? '');
     _totalCtrl = TextEditingController(text: g?.targetPages.toString() ?? '');
+    _manualTargetPages = _totalCtrl.text;
     _bookId = g?.bookId;
     _start = g?.startDate ?? DateUtils.dateOnly(DateTime.now());
     _end = initialGoalPickerDate(
@@ -49,21 +54,48 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
     _loadBooks();
   }
 
+  @override
+  void reassemble() {
+    super.reassemble();
+    _loadBooks();
+  }
+
   Future<void> _loadBooks() async {
     try {
-      final books = await BookStatusService().getBooksForCurrentUser();
+      final store = BookshelfStore.instance;
+      await store.loadFromApi();
+      final shelfBooks = [
+        ...store.booksWithStatus(EnumBookStatus.reading),
+        ...store.booksWithStatus(EnumBookStatus.want),
+      ].where((item) => isEligibleGoalBookStatus(item.status)).toList();
       if (!mounted) return;
       setState(() {
-                _books = books
-            .where(
-              (b) =>
-                  b.databaseId != null &&
-                  (b.status == EnumBookStatus.reading ||
-                      b.status == EnumBookStatus.finished ||
-                      b.databaseId == _bookId),
-            )
+        _bookPagesById
+          ..clear()
+          ..addEntries(
+            shelfBooks
+                .where((item) => item.book.databaseId != null)
+                .map(
+                  (item) => MapEntry(
+                    item.book.databaseId!,
+                    item.totalPages > 0
+                        ? item.totalPages
+                        : item.book.totalPages,
+                  ),
+                ),
+          );
+        _books = shelfBooks
+            .map((item) => item.book)
+            .where((book) => book.databaseId != null)
             .toList();
         if (!_books.any((b) => b.databaseId == _bookId)) _bookId = null;
+        final selectedPages = _selectedBookTotalPages;
+        if (widget.goal != null &&
+            selectedPages > 0 &&
+            widget.goal!.targetPages == selectedPages) {
+          _useAllBookPages = true;
+          _totalCtrl.text = selectedPages.toString();
+        }
         _loadingBooks = false;
       });
     } catch (e) {
@@ -140,6 +172,64 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
     return null;
   }
 
+  int get _selectedBookTotalPages {
+    final bookId = _bookId;
+    if (bookId == null) return 0;
+    return _bookPagesById[bookId] ?? _selectedBook?.totalPages ?? 0;
+  }
+
+  Map<int, int> get _bookPagesById => _bookTotalPages ??= <int, int>{};
+
+  bool get _isUsingAllBookPages => isUsingAllBookPages(_useAllBookPages);
+
+  Future<void> _selectBook(int? bookId) async {
+    setState(() {
+      _bookId = bookId;
+      final totalPages = _selectedBookTotalPages;
+      if (_isUsingAllBookPages && totalPages > 0) {
+        _totalCtrl.text = totalPages.toString();
+      } else if (_isUsingAllBookPages) {
+        _useAllBookPages = false;
+        _totalCtrl.text = _manualTargetPages ?? '';
+      }
+    });
+
+    if (bookId == null || _selectedBookTotalPages > 0) return;
+    final selectedBook = _selectedBook;
+    if (selectedBook == null) return;
+
+    try {
+      final metadata = await GoogleBooksService().findByTitleAndAuthor(
+        selectedBook.title,
+        selectedBook.author,
+      );
+      if (!mounted || _bookId != bookId) return;
+      final totalPages = resolveBookTotalPages(
+        savedTotal: _selectedBookTotalPages,
+        metadataTotal: metadata?.totalPages ?? 0,
+      );
+      if (totalPages <= 0) return;
+      setState(() => _bookPagesById[bookId] = totalPages);
+    } catch (_) {
+      // A opção permanece oculta quando não há total de páginas disponível.
+    }
+  }
+
+  void _toggleAllBookPages(bool? selected) {
+    final totalPages = _selectedBookTotalPages;
+    if (totalPages <= 0) return;
+
+    setState(() {
+      _useAllBookPages = selected ?? false;
+      if (_isUsingAllBookPages) {
+        _manualTargetPages = _totalCtrl.text;
+        _totalCtrl.text = totalPages.toString();
+      } else {
+        _totalCtrl.text = _manualTargetPages ?? '';
+      }
+    });
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (!isSelectableGoalEndDate(_end)) {
@@ -157,7 +247,11 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
       return;
     }
 
-    final targetPages = int.parse(_totalCtrl.text);
+    final targetPages = goalTargetPages(
+      typedValue: _totalCtrl.text,
+      useAllBookPages: _isUsingAllBookPages,
+      bookTotalPages: _selectedBookTotalPages,
+    )!;
 
     final goal = ReadingGoal(
       id: widget.goal?.id,
@@ -410,7 +504,7 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
                   ),
                 )
                 .toList(),
-            onChanged: _saving ? null : (v) => setState(() => _bookId = v),
+            onChanged: _saving ? null : _selectBook,
             validator: (v) => v == null ? 'Selecione um livro' : null,
           ),
       ],
@@ -420,6 +514,7 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
   @override
   Widget build(BuildContext context) {
     final editando = widget.goal != null;
+    final allBookPagesLabel = allBookPagesOptionLabel(_selectedBookTotalPages);
 
     return SubPageLayout(
       title: editando ? 'Editar meta' : 'Nova meta',
@@ -444,15 +539,47 @@ class _MetaFormScreenState extends State<MetaFormScreen> {
               controller: _totalCtrl,
               keyboardType: TextInputType.number,
               label: 'Total de páginas da meta',
+              readOnly: _isUsingAllBookPages,
 
               validator: (v) {
-                final n = int.tryParse(v ?? '');
+                final n = goalTargetPages(
+                  typedValue: v ?? '',
+                  useAllBookPages: _isUsingAllBookPages,
+                  bookTotalPages: _selectedBookTotalPages,
+                );
                 if (n == null || n <= 0) {
                   return 'Informe um número maior que zero';
                 }
                 return null;
               },
             ),
+            if (allBookPagesLabel != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.primary10,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: CheckboxListTile(
+                  value: _isUsingAllBookPages,
+                  onChanged: _saving ? null : _toggleAllBookPages,
+                  activeColor: AppColors.primary,
+                  checkColor: Colors.white,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                  visualDensity: VisualDensity.compact,
+                  title: Text(
+                    allBookPagesLabel,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             _dateField(label: 'Data de início', value: _start, isStart: true),
             const SizedBox(height: 16),
