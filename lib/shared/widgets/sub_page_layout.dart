@@ -8,7 +8,14 @@ class SubPageLayout extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const SubPageLayout({super.key, required this.title, required this.child});
+  final Widget? headerBottom;
+
+  const SubPageLayout({
+    super.key,
+    required this.title,
+    required this.child,
+    this.headerBottom,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +62,11 @@ class SubPageLayout extends StatelessWidget {
                   ],
                 ),
               ),
+              if (headerBottom != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  child: headerBottom,
+                ),
               Expanded(
                 child: Container(
                   width: double.infinity,

@@ -5,14 +5,18 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/core/theme/app_shadow.dart';
 import 'package:bookcase/features/shopping_list/add_to_shopping_list_page.dart';
+import 'package:bookcase/features/shopping_list/price_utils.dart';
+import 'package:bookcase/features/shopping_list/shopping_item_form_modal.dart';
+import 'package:bookcase/features/shopping_list/shopping_list_actions.dart';
 import 'package:bookcase/features/shopping_list/shopping_list_service.dart';
 import 'package:bookcase/models/shopping_list_item.dart';
 import 'package:bookcase/models/book.dart';
+import 'package:bookcase/shared/widgets/badge_default.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
+import 'package:bookcase/shared/widgets/button/button_status_book.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
 import 'package:bookcase/shared/widgets/text/title_h1.dart';
 import 'package:bookcase/shared/widgets/text_field/search_text_field.dart';
-import 'package:bookcase/shared/widgets/text_field/text_field_default.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -31,11 +35,15 @@ class ShoppingListPage extends StatefulWidget {
 }
 
 class _ShoppingListPageState extends State<ShoppingListPage> {
+  static const double _bottomNavigationSpace = 92;
+
   final ShoppingListService service = ShoppingListService();
 
   List<ShoppingListItem> items = [];
   bool isLoading = true;
+  String? _error;
   int _selectedTab = 0;
+  final Set<int> _checkingIds = {};
 
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -68,232 +76,104 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
   void initState() {
     super.initState();
     loadItems();
+    ShoppingListService.changes.addListener(_onListChanged);
     _searchCtrl.addListener(() {
       if (mounted) setState(() => _searchQuery = _searchCtrl.text);
     });
     if (widget.initialBook != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _openForm(initialBook: widget.initialBook);
+        if (mounted) _openNewItemForm(widget.initialBook!);
       });
     }
   }
 
   @override
   void dispose() {
+    ShoppingListService.changes.removeListener(_onListChanged);
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  String _formatPrice(double price) {
-    return 'R\$ ${price.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
   Future<void> _openAddBookSearch() async {
-    final added = await Navigator.push<bool>(
+    await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const AddToShoppingListPage()),
     );
-    if (added == true) {
-      await loadItems();
-    }
   }
 
-  Future<void> _openForm({
-    ShoppingListItem? existing,
-    Book? initialBook,
-  }) async {
-    final isEditing = existing != null;
-    final formKey = GlobalKey<FormState>();
-    final titleCtrl = TextEditingController(
-      text: existing?.title ?? initialBook?.title ?? '',
-    );
-    final authorCtrl = TextEditingController(
-      text: existing?.author ?? initialBook?.author ?? '',
-    );
-    final priceCtrl = TextEditingController(
-      text: existing != null ? existing.price.toStringAsFixed(2) : '',
-    );
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+  Future<void> _openNewItemForm(Book book) {
+    return showShoppingItemFormModal(
+      context,
+      initial: ShoppingListItem(
+        id: 0,
+        title: book.title,
+        author: book.author,
+        price: 0,
+        bought: false,
       ),
-      builder: (sheetContext) {
-        var isSaving = false;
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                4,
-                20,
-                MediaQuery.viewInsetsOf(context).bottom + 24,
-              ),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isEditing ? 'Editar livro' : 'Adicionar à lista',
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isEditing
-                          ? 'Atualize as informações deste item.'
-                          : 'Salve um livro que você quer comprar depois.',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    TextFieldDefault(
-                      label: 'Título',
-                      hintText: 'Nome do livro',
-                      controller: titleCtrl,
-                      prefixIcon: const Icon(LucideIcons.bookOpen, size: 18),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? 'Informe o título do livro'
-                          : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFieldDefault(
-                      label: 'Autor (opcional)',
-                      hintText: 'Nome do autor',
-                      controller: authorCtrl,
-                      prefixIcon: const Icon(LucideIcons.userRound, size: 18),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFieldDefault(
-                      label: 'Preço',
-                      hintText: '0,00',
-                      controller: priceCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      prefixIcon: const Icon(
-                        LucideIcons.badgeDollarSign,
-                        size: 18,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) return null;
-                        final price = double.tryParse(
-                          value.trim().replaceAll(',', '.'),
-                        );
-                        return price == null || price < 0
-                            ? 'Informe um preço válido'
-                            : null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    ButtonDefault(
-                      text: isEditing ? 'Salvar alterações' : 'Adicionar livro',
-                      width: ButtonWidth.full,
-                      size: ButtonSize.lg,
-                      isLoading: isSaving,
-                      prefixIcon: Icon(
-                        isEditing ? LucideIcons.check : LucideIcons.plus,
-                        size: 18,
-                      ),
-                      onPressed: () async {
-                        if (!(formKey.currentState?.validate() ?? false)) {
-                          return;
-                        }
-
-                        setModalState(() => isSaving = true);
-                        final item = ShoppingListItem(
-                          id: existing?.id ?? 0,
-                          title: titleCtrl.text.trim(),
-                          author: authorCtrl.text.trim().isEmpty
-                              ? null
-                              : authorCtrl.text.trim(),
-                          price:
-                              double.tryParse(
-                                priceCtrl.text.trim().replaceAll(',', '.'),
-                              ) ??
-                              0,
-                          bought: existing?.bought ?? false,
-                        );
-
-                        try {
-                          if (isEditing) {
-                            await service.update(item);
-                          } else {
-                            await service.create(item);
-                          }
-                          if (sheetContext.mounted) {
-                            Navigator.pop(sheetContext);
-                          }
-                          await loadItems();
-                        } catch (error) {
-                          if (sheetContext.mounted) {
-                            setModalState(() => isSaving = false);
-                            AppAlert.error(
-                              sheetContext,
-                              'Erro ao salvar: $error',
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      onSubmit: service.create,
     );
-
-    titleCtrl.dispose();
-    authorCtrl.dispose();
-    priceCtrl.dispose();
   }
 
-  Future<void> loadItems() async {
-    setState(() => isLoading = true);
+  void _onListChanged() => loadItems(silent: true);
+
+  Future<void> loadItems({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        isLoading = true;
+        _error = null;
+      });
+    }
     try {
       final result = await service.getAll();
       if (!mounted) return;
-      setState(() => items = result);
+      setState(() {
+        items = result;
+        _error = null;
+      });
     } catch (error) {
       if (!mounted) return;
-      AppAlert.error(context, 'Erro ao carregar a lista: $error');
+      if (silent && items.isNotEmpty) {
+        AppAlert.error(context, 'Erro ao atualizar a lista: $error');
+      } else {
+        setState(() => _error = 'Não foi possível carregar a lista.');
+      }
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted && !silent) setState(() => isLoading = false);
     }
   }
 
   Future<void> _toggleBought(ShoppingListItem item) async {
+    if (_checkingIds.contains(item.id)) return;
+
+    final updated = ShoppingListItem(
+      id: item.id,
+      title: item.title,
+      author: item.author,
+      price: item.price,
+      bought: !item.bought,
+    );
+
+    setState(() => _checkingIds.add(item.id));
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+
+    setState(() {
+      _checkingIds.remove(item.id);
+      items = [for (final i in items) i.id == item.id ? updated : i];
+    });
+
     try {
-      await service.update(
-        ShoppingListItem(
-          id: item.id,
-          title: item.title,
-          author: item.author,
-          price: item.price,
-          bought: !item.bought,
-        ),
-      );
-      await loadItems();
-    } catch (error) {
-      if (mounted) {
-        AppAlert.error(context, 'Erro ao atualizar: $error');
+      await service.update(updated);
+      if (mounted && updated.bought) {
+        AppAlert.success(context, '“${item.title}” foi para adquiridos.');
       }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        items = [for (final i in items) i.id == item.id ? item : i];
+      });
+      AppAlert.error(context, 'Erro ao atualizar: $error');
     }
   }
 
@@ -309,7 +189,6 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
 
     try {
       await service.delete(item.id);
-      await loadItems();
     } catch (error) {
       if (mounted) {
         AppAlert.error(context, 'Erro ao excluir: $error');
@@ -320,20 +199,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
       backgroundColor: AppColors.primary,
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: widget.embeddedInNavigation ? 72 : 0),
-        child: FloatingActionButton(
-          onPressed: _openAddBookSearch,
-          tooltip: 'Adicionar livro',
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 5,
-          shape: const CircleBorder(),
-          child: const Icon(LucideIcons.plus, size: 26),
-        ),
-      ),
       body: Container(
         decoration: AppDecorations.header,
         child: SafeArea(
@@ -346,15 +212,36 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const TitleH1(
-                      text: 'Lista de compras',
-                      color: Colors.white,
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: TitleH1(
+                            text: 'Lista de compras',
+                            color: Colors.white,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(LucideIcons.plus),
+                          tooltip: 'Adicionar livro',
+                          onPressed: _openAddBookSearch,
+                          style: IconButton.styleFrom(
+                            fixedSize: const Size.square(40),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.16,
+                            ),
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppDecorations.buttonBorderRadius,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      isLoading
-                          ? 'Organize suas próximas leituras'
-                          : '$_pendingItems ${_pendingItems == 1 ? 'livro pendente' : 'livros pendentes'}  •  ${_formatPrice(_pendingTotal)}',
+                      isLoading || _error != null
+                          ? ' '
+                          : '$_pendingItems ${_pendingItems == 1 ? 'livro pendente' : 'livros pendentes'}  •  ${formatPrice(_pendingTotal)}',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.72),
                         fontSize: 14,
@@ -394,6 +281,26 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
       );
     }
 
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              ButtonDefault(text: 'Tentar novamente', onPressed: loadItems),
+            ],
+          ),
+        ),
+      );
+    }
+
     final tabItems = _selectedTab == 0 ? _toBuyItems : _acquiredItems;
 
     return Column(
@@ -404,15 +311,26 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
               ? _buildTabEmptyState()
               : RefreshIndicator(
                   color: AppColors.primary,
-                  onRefresh: loadItems,
+                  onRefresh: () => loadItems(silent: true),
                   child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 124),
+                    padding: const EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      _bottomNavigationSpace,
+                    ),
                     itemCount: tabItems.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) => _ShoppingItemCard(
                       item: tabItems[index],
-                      formattedPrice: _formatPrice(tabItems[index].price),
-                      onTap: () => _openForm(existing: tabItems[index]),
+                      formattedPrice: formatPrice(tabItems[index].price),
+                      checked:
+                          tabItems[index].bought !=
+                          _checkingIds.contains(tabItems[index].id),
+                      onTap: () => ShoppingListActions.editItem(
+                        context,
+                        tabItems[index],
+                      ),
                       onToggle: () => _toggleBought(tabItems[index]),
                       onDelete: () => _deleteItem(tabItems[index]),
                     ),
@@ -425,71 +343,29 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
 
   Widget _buildTabSelector() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AppColors.surfaceBorder),
-        ),
-        child: Row(
-          children: [
-            _buildTabButton(
-              label: 'Para comprar',
-              icon: LucideIcons.shoppingBag,
-              index: 0,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Row(
+        spacing: 8,
+        children: [
+          Expanded(
+            child: ButtonStatusBook(
+              text: 'Para comprar',
+              quantity: _toBuyItems.length,
+              prefixIcon: const Icon(LucideIcons.shoppingBag),
+              selected: _selectedTab == 0,
+              onPressed: () => setState(() => _selectedTab = 0),
             ),
-            _buildTabButton(
-              label: 'Adquiridos',
-              icon: LucideIcons.check,
-              index: 1,
+          ),
+          Expanded(
+            child: ButtonStatusBook(
+              text: 'Adquiridos',
+              quantity: _acquiredItems.length,
+              prefixIcon: const Icon(LucideIcons.bookCheck),
+              selected: _selectedTab == 1,
+              onPressed: () => setState(() => _selectedTab = 1),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabButton({
-    required String label,
-    required IconData icon,
-    required int index,
-  }) {
-    final selected = _selectedTab == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedTab = index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: selected ? Colors.white : AppColors.textSecondary,
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: selected ? Colors.white : AppColors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -499,39 +375,51 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     final isToBuy = _selectedTab == 0;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(32, 24, 32, 112),
+        padding: const EdgeInsets.fromLTRB(32, 16, 32, 80),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isSearching
-                  ? LucideIcons.search
-                  : (isToBuy ? LucideIcons.shoppingBag : LucideIcons.check),
-              size: 40,
-              color: AppColors.primary,
+            Container(
+              width: 80,
+              height: 80,
+              decoration: const BoxDecoration(
+                color: AppColors.primary10,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isSearching
+                    ? LucideIcons.search
+                    : (isToBuy
+                          ? LucideIcons.shoppingBag
+                          : LucideIcons.bookCheck),
+                size: 36,
+                color: AppColors.primary,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Text(
               isSearching
                   ? 'Nenhum resultado'
                   : (isToBuy ? 'Nada para comprar' : 'Nenhum livro adquirido'),
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               isSearching
-                  ? 'Nenhum livro corresponde à sua busca.'
+                  ? 'Tente pesquisar outro título ou autor.'
                   : (isToBuy
-                        ? 'Adicione livros que você quer comprar.'
+                        ? 'Toque em + para adicionar livros que você quer comprar.'
                         : 'Marque itens como adquiridos para vê-los aqui.'),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 14,
+                height: 1.4,
               ),
             ),
           ],
@@ -544,6 +432,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
 class _ShoppingItemCard extends StatelessWidget {
   final ShoppingListItem item;
   final String formattedPrice;
+  final bool checked;
   final VoidCallback onTap;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
@@ -551,6 +440,7 @@ class _ShoppingItemCard extends StatelessWidget {
   const _ShoppingItemCard({
     required this.item,
     required this.formattedPrice,
+    required this.checked,
     required this.onTap,
     required this.onToggle,
     required this.onDelete,
@@ -562,7 +452,7 @@ class _ShoppingItemCard extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         color: item.bought ? AppColors.primary10 : AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: item.bought ? AppColors.primary10 : AppColors.surfaceBorder,
         ),
@@ -570,51 +460,56 @@ class _ShoppingItemCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+            padding: const EdgeInsets.fromLTRB(10, 16, 12, 16),
             child: Row(
               children: [
                 Semantics(
                   button: true,
-                  checked: item.bought,
+                  checked: checked,
                   label: item.bought
                       ? 'Marcar ${item.title} como pendente'
-                      : 'Marcar ${item.title} como comprado',
+                      : 'Marcar ${item.title} como adquirido',
                   child: InkWell(
                     onTap: onToggle,
                     customBorder: const CircleBorder(),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
+                    child: SizedBox(
                       width: 42,
                       height: 42,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: item.bought
-                            ? AppColors.primary
-                            : AppColors.background,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: item.bought
-                              ? AppColors.primary
-                              : AppColors.border,
-                          width: 1.5,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: checked
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: checked
+                                  ? AppColors.primary
+                                  : AppColors.textTertiary,
+                              width: 2,
+                            ),
+                          ),
+                          child: checked
+                              ? const Icon(
+                                  LucideIcons.check,
+                                  size: 16,
+                                  color: Colors.white,
+                                )
+                              : null,
                         ),
-                      ),
-                      child: Icon(
-                        item.bought ? LucideIcons.check : LucideIcons.bookOpen,
-                        size: 19,
-                        color: item.bought
-                            ? Colors.white
-                            : AppColors.textTertiary,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,12 +524,13 @@ class _ShoppingItemCard extends StatelessWidget {
                               : AppColors.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
+                          height: 1.25,
                           decoration: item.bought
                               ? TextDecoration.lineThrough
                               : null,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         item.author?.trim().isNotEmpty == true
                             ? item.author!
@@ -643,29 +539,15 @@ class _ShoppingItemCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
+                          fontSize: 12,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: item.bought
-                              ? AppColors.background.withValues(alpha: 0.7)
-                              : AppColors.cream,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          formattedPrice,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                      BadgeDefault(
+                        text: formattedPrice,
+                        variant: item.bought
+                            ? BadgeVariant.secondary
+                            : BadgeVariant.primary,
                       ),
                     ],
                   ),

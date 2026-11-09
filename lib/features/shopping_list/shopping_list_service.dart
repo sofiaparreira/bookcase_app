@@ -1,11 +1,14 @@
 import 'dart:convert';
 
 import 'package:bookcase/core/config/api_config.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:bookcase/models/shopping_list_item.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
 
 class ShoppingListService {
+  static final ValueNotifier<int> changes = ValueNotifier<int>(0);
+
   // Monta os headers com o token de autenticação (usuário logado)
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
@@ -37,6 +40,7 @@ class ShoppingListService {
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
+      changes.value++;
       return ShoppingListItem.fromJson(jsonDecode(response.body));
     } else {
       throw Exception('Falha ao criar o item: ${response.statusCode}');
@@ -55,6 +59,7 @@ class ShoppingListService {
     if (response.statusCode != 204) {
       throw Exception('Falha ao atualizar o item: ${response.statusCode}');
     }
+    changes.value++;
   }
 
   // DELETE /api/shoppinglist/:id - Remove um item
@@ -65,5 +70,6 @@ class ShoppingListService {
     if (response.statusCode != 204) {
       throw Exception('Falha ao remover o item: ${response.statusCode}');
     }
+    changes.value++;
   }
 }

@@ -1,5 +1,6 @@
 import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class TextFieldDefault extends StatelessWidget {
   final String label;
@@ -13,6 +14,8 @@ class TextFieldDefault extends StatelessWidget {
   final VoidCallback? onTap;
   final bool readOnly;
   final AutovalidateMode? autovalidateMode;
+  final List<TextInputFormatter>? inputFormatters;
+  final bool autofocus;
 
   const TextFieldDefault({
     super.key,
@@ -27,6 +30,8 @@ class TextFieldDefault extends StatelessWidget {
     this.onTap,
     this.readOnly = false,
     this.autovalidateMode,
+    this.inputFormatters,
+    this.autofocus = false,
   });
 
   @override
@@ -51,6 +56,8 @@ class TextFieldDefault extends StatelessWidget {
           onTap: onTap,
           readOnly: readOnly,
           autovalidateMode: autovalidateMode,
+          inputFormatters: inputFormatters,
+          autofocus: autofocus,
           style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hintText,

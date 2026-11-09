@@ -4,6 +4,9 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_actions.dart';
 import 'package:bookcase/features/my_bookshelf/bookshelf_store.dart';
+import 'package:bookcase/features/shopping_list/price_utils.dart';
+import 'package:bookcase/features/shopping_list/shopping_list_service.dart';
+import 'package:bookcase/models/shopping_list_item.dart';
 import 'package:bookcase/features/streak/streak_store.dart';
 import 'package:bookcase/models/book.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
@@ -91,6 +94,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: RefreshIndicator(
                   onRefresh: () {
                     GoalsService.changes.value++; // força a home recarregar, caso esteja aberta
+                    ShoppingListService.changes.value++;
                     return _loadSummary(refresh: true);
                   },
                   child: SingleChildScrollView(
@@ -572,13 +576,66 @@ class _GoalPreviewState extends State<_GoalPreview> {
   }
 }
 
-class _ShoppingListPreview extends StatelessWidget {
+class _ShoppingListPreview extends StatefulWidget {
   final VoidCallback onTap;
 
   const _ShoppingListPreview({required this.onTap});
 
   @override
+  State<_ShoppingListPreview> createState() => _ShoppingListPreviewState();
+}
+
+class _ShoppingListPreviewState extends State<_ShoppingListPreview> {
+  static const _maxPreviewItems = 3;
+
+  List<ShoppingListItem> _pending = [];
+  bool _loading = true;
+  bool _error = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ShoppingListService.changes.addListener(_load);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    ShoppingListService.changes.removeListener(_load);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final items = await ShoppingListService().getAll();
+      if (!mounted) return;
+      setState(() {
+        _pending = items.where((item) => !item.bought).toList();
+        _error = false;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = true;
+        _loading = false;
+      });
+    }
+  }
+
+  String get _subtitle {
+    if (_loading) return 'Carregando...';
+    if (_error) return 'Não foi possível carregar a lista';
+    if (_pending.isEmpty) return 'Nenhum livro pendente';
+    final count = _pending.length;
+    return '$count ${count == 1 ? 'livro pendente' : 'livros pendentes'}';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final total = _pending.fold<double>(0, (sum, item) => sum + item.price);
+    final preview = _pending.take(_maxPreviewItems).toList();
+
     return Container(
       decoration: AppDecorations.card,
       child: Material(
@@ -586,28 +643,43 @@ class _ShoppingListPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: onTap,
-          child: const Padding(
-            padding: EdgeInsets.all(16),
+          onTap: widget.onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _PreviewHeader(),
-                SizedBox(height: 16),
-                _PreviewShoppingItem(
-                  title: 'A Biblioteca da Meia-Noite',
-                  author: 'Matt Haig',
-                  price: 'R\$ 44,90',
+                _PreviewHeader(
+                  subtitle: _subtitle,
+                  total: preview.isEmpty ? null : formatPrice(total),
                 ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(height: 1, color: AppColors.surfaceBorder),
-                ),
-                _PreviewShoppingItem(
-                  title: 'Torto Arado',
-                  author: 'Itamar Vieira Junior',
-                  price: 'R\$ 52,90',
-                  bought: true,
-                ),
+                if (!_loading && !_error && preview.isEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Toque para adicionar livros que você quer comprar.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+                if (preview.isNotEmpty) const SizedBox(height: 16),
+                for (var i = 0; i < preview.length; i++) ...[
+                  if (i > 0)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Divider(height: 1, color: AppColors.surfaceBorder),
+                    ),
+                  _PreviewShoppingItem(
+                    title: preview[i].title,
+                    author: preview[i].author?.trim().isNotEmpty == true
+                        ? preview[i].author!
+                        : 'Autor não informado',
+                    price: formatPrice(preview[i].price),
+                  ),
+                ],
               ],
             ),
           ),
@@ -618,7 +690,10 @@ class _ShoppingListPreview extends StatelessWidget {
 }
 
 class _PreviewHeader extends StatelessWidget {
-  const _PreviewHeader();
+  final String subtitle;
+  final String? total;
+
+  const _PreviewHeader({required this.subtitle, this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -639,11 +714,11 @@ class _PreviewHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Próximas compras',
                 style: TextStyle(
                   color: AppColors.textPrimary,
@@ -651,22 +726,26 @@ class _PreviewHeader extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
-                '1 livro pendente',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                subtitle,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
         ),
-        Text(
-          'R\$ 44,90',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
+        if (total != null)
+          Text(
+            total!,
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-        ),
       ],
     );
   }
@@ -676,13 +755,11 @@ class _PreviewShoppingItem extends StatelessWidget {
   final String title;
   final String author;
   final String price;
-  final bool bought;
 
   const _PreviewShoppingItem({
     required this.title,
     required this.author,
     required this.price,
-    this.bought = false,
   });
 
   @override
@@ -694,17 +771,14 @@ class _PreviewShoppingItem extends StatelessWidget {
           height: 34,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: bought ? AppColors.primary : AppColors.background,
+            color: AppColors.background,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: bought ? AppColors.primary : AppColors.border,
-              width: 1.5,
-            ),
+            border: Border.all(color: AppColors.border, width: 1.5),
           ),
-          child: Icon(
-            bought ? LucideIcons.check : LucideIcons.bookOpen,
+          child: const Icon(
+            LucideIcons.bookOpen,
             size: 16,
-            color: bought ? Colors.white : AppColors.textTertiary,
+            color: AppColors.textTertiary,
           ),
         ),
         const SizedBox(width: 12),
@@ -716,13 +790,10 @@ class _PreviewShoppingItem extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: bought
-                      ? AppColors.textSecondary
-                      : AppColors.textPrimary,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  decoration: bought ? TextDecoration.lineThrough : null,
                 ),
               ),
               const SizedBox(height: 2),
