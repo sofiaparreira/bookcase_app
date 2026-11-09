@@ -31,15 +31,26 @@ class _MetasScreenState extends State<MetasScreen> {
   @override
   void initState() {
     super.initState();
+    GoalsService.changes.addListener(_reload);
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
+  @override
+  void dispose() {
+    GoalsService.changes.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _reload() => _load(silent: true);
+
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+    try  {
       final goals = await _service.getGoals();
       if (!mounted) return;
       setState(() {

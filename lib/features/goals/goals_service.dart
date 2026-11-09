@@ -4,8 +4,11 @@ import 'package:bookcase/core/config/api_config.dart';
 import 'package:bookcase/features/auth/auth_service.dart';
 import 'package:bookcase/models/reading_goal.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class GoalsService {
+  /// Sobe a cada criar/editar/excluir/progresso, para a home recarregar.
+  static final ValueNotifier<int> changes = ValueNotifier<int>(0);
   static const _timeout = Duration(seconds: 60); // a API grátis demora a acordar
 
   Map<String, String> get _headers {
@@ -41,6 +44,7 @@ class GoalsService {
   Future<List<ReadingGoal>> getGoals() async {
     final r = await http.get(_uri(), headers: _headers).timeout(_timeout);
     _check(r, 'buscar metas');
+    
     final data = jsonDecode(r.body) as List<dynamic>;
     return data
         .map((e) => ReadingGoal.fromJson(e as Map<String, dynamic>))
@@ -52,6 +56,7 @@ class GoalsService {
         .post(_uri(), headers: _headers, body: jsonEncode(goal.toJson()))
         .timeout(_timeout);
     _check(r, 'criar meta');
+    changes.value++; // força a home recarregar, caso esteja aberta
     return ReadingGoal.fromJson(jsonDecode(r.body) as Map<String, dynamic>);
   }
 
@@ -60,6 +65,7 @@ class GoalsService {
         .put(_uri(goal.id), headers: _headers, body: jsonEncode(goal.toJson()))
         .timeout(_timeout);
     _check(r, 'atualizar meta');
+    changes.value++; // força a home recarregar, caso esteja aberta
   }
 
   /// Salva só a página em que o usuário parou (PATCH /api/ReadingGoal/{id}/progress).
@@ -72,10 +78,12 @@ class GoalsService {
         )
         .timeout(_timeout);
     _check(r, 'atualizar progresso');
+    changes.value++; // força a home recarregar, caso esteja aberta
   }
 
   Future<void> deleteGoal(int id) async {
     final r = await http.delete(_uri(id), headers: _headers).timeout(_timeout);
     _check(r, 'excluir meta');
+    changes.value++; // força a home recarregar, caso esteja aberta
   }
 }
