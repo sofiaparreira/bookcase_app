@@ -49,6 +49,8 @@ public class BookController : ControllerBase
     {
         var userId = GetUserId();
         book.UserId = userId;
+        book.CurrentPage = Math.Max(book.CurrentPage, 0);
+        UpdateCompletion(book, book.CompletedAt);
 
         _context.Books.Add(book);
         await _context.SaveChangesAsync();
@@ -80,6 +82,8 @@ public class BookController : ControllerBase
         existingBook.Description = book.Description;
         existingBook.Rating = book.Rating;
         existingBook.Status = book.Status;
+        existingBook.CurrentPage = Math.Max(book.CurrentPage, 0);
+        UpdateCompletion(existingBook, book.CompletedAt ?? existingBook.CompletedAt);
 
         await _context.SaveChangesAsync();
         return NoContent();
@@ -96,5 +100,12 @@ public class BookController : ControllerBase
         _context.Books.Remove(book);
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+
+    private static void UpdateCompletion(Book book, DateTime? completedAt)
+    {
+        book.CompletedAt = book.Status == Book.ReadingStatus.Completed
+            ? completedAt ?? DateTime.UtcNow
+            : null;
     }
 }

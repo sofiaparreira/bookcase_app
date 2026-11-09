@@ -12,5 +12,4 @@ public class ReadingGoal
     public int CurrentPage { get; set; } = 0;
     public DateTime StartDate { get; set; } = DateTime.UtcNow;
     public DateTime EndDate { get; set; }
-    public DateTime? CompletedAt { get; set; }
 }

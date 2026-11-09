@@ -11,6 +11,8 @@ public class Book
     public double Rating { get; set; } = 0.0;
 
     public  ReadingStatus Status { get; set; } = ReadingStatus.NotStarted;
+    public int CurrentPage { get; set; } = 0;
+    public DateTime? CompletedAt { get; set; }
 
     public enum ReadingStatus{NotStarted,InProgress,Completed}
 }
