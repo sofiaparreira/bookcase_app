@@ -22,12 +22,11 @@ class _ProfilePageState extends State<ProfilePage> {
   final _bookshelf = BookshelfStore.instance;
   final _streak = StreakStore.instance;
 
-  // Valores mockados até existirem endpoints para eles
-  static const _pagesRead = '1.552';
-
   AuthUser? _user;
 
   int get _booksRead => _bookshelf.countWithStatus(EnumBookStatus.finished);
+
+  int get _pagesRead => _bookshelf.readPages;
 
   int get _streakDays => _streak.currentStreak;
 
@@ -207,10 +206,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 color: AppColors.primary,
               ),
             ),
-            const Expanded(
+            Expanded(
               child: _StatCard(
                 icon: LucideIcons.fileText,
-                value: _pagesRead,
+                value: '$_pagesRead',
                 label: 'Páginas lidas',
                 color: AppColors.darkPurple,
               ),
