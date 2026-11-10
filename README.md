@@ -62,16 +62,6 @@ Leitores, estudantes e pessoas que desejam desenvolver ou acompanhar o hábito d
 | 7 | Provider e separação entre telas, HTTP e preferências | Atendido | O projeto separa telas, serviços HTTP e persistência e usa `ChangeNotifier`, `ValueNotifier` e `ListenableBuilder`. |
 | 8 | Aplicativo abre e percorre o fluxo sem crashar | Atendido |
 
-### Principais evidências técnicas
-
-- **Navegação principal:** `lib/app.dart` e `lib/shared/widgets/bottom_navigation.dart`.
-- **Modelos:** `lib/models`.
-- **Telas e funcionalidades:** `lib/features`.
-- **Serviços HTTP:** classes `Service` dentro de `lib/features` e `lib/shared/service`.
-- **Estado reativo:** `BookshelfStore`, `StreakStore`, `GoalsService.changes` e `AuthService`.
-- **Persistência local:** `SharedPreferences`.
-- **Listas dinâmicas:** busca, estante, metas e compras.
-- **Validação:** login, cadastro, metas, compras e configurações de perfil.
 
 ## 4. API e dados remotos
 
