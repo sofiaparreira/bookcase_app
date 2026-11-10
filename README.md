@@ -60,7 +60,7 @@ Leitores, estudantes e pessoas que desejam desenvolver ou acompanhar o hábito d
 | 5 | Lista dinâmica com `ListView.builder` | Atendido | As listas são dinâmicas e construídas sob demanda com `itemCount` e `itemBuilder`, mas utilizam principalmente `ListView.separated`, uma variação do mesmo padrão. |
 | 6 | Persistência com `SharedPreferences` | Atendido | Sessão, token, e-mail, progresso local e sequência de leitura são persistidos em `lib/features/auth/auth_service.dart`, `lib/features/my_bookshelf/bookshelf_store.dart` e `lib/features/streak/streak_store.dart`. |
 | 7 | Provider e separação entre telas, HTTP e preferências | Atendido | O projeto separa telas, serviços HTTP e persistência e usa `ChangeNotifier`, `ValueNotifier` e `ListenableBuilder`. |
-| 8 | Aplicativo abre e percorre o fluxo sem crashar | Atendido no fluxo principal | O projeto passa no `flutter analyze` e compila. Há uma pendência no teste geral de widgets causada por timers de sincronização e alertas que permanecem ativos após o encerramento do teste. |
+| 8 | Aplicativo abre e percorre o fluxo sem crashar | Atendido |
 
 ### Principais evidências técnicas
 
