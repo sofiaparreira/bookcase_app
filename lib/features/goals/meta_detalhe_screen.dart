@@ -9,7 +9,6 @@ import 'package:bookcase/core/theme/app_colors.dart';
 import 'package:bookcase/core/theme/app_decorations.dart';
 import 'package:bookcase/shared/widgets/button/button_default.dart';
 import 'package:bookcase/shared/widgets/modal/confirm_dialog.dart';
-import 'package:bookcase/shared/widgets/modal/update_reading_progress_modal.dart';
 import 'package:bookcase/shared/widgets/sub_page_layout.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +26,6 @@ class _MetaDetalheScreenState extends State<MetaDetalheScreen> {
   final _service = GoalsService();
   ReadingGoal get _goal => widget.goal;
   bool _deleting = false;
-  bool _savingProgress = false;
 
   Future<void> _edit() async {
     final changed = await Navigator.push<bool>(
@@ -35,34 +33,6 @@ class _MetaDetalheScreenState extends State<MetaDetalheScreen> {
       MaterialPageRoute(builder: (_) => MetaFormScreen(goal: _goal)),
     );
     if (changed == true && mounted) Navigator.pop(context, true);
-  }
-
-  Future<void> _updateProgress() async {
-    final result = await showModalBottomSheet<ReadingProgressResult>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => UpdateReadingProgressModal(
-        title: _goal.bookTitle ?? _goal.title,
-        currentPage: _goal.currentPage,
-        totalPages: _goal.targetPages,
-      ),
-    );
-    if (result == null || !mounted) return;
-
-    final page = result.currentPage.clamp(0, _goal.targetPages);
-    if (page == _goal.currentPage) return;
-
-    setState(() => _savingProgress = true);
-    try {
-      await _service.updateProgress(_goal.id!, page);
-      if (!mounted) return;
-      AppAlert.success(context, 'Progresso atualizado!');
-      Navigator.pop(context, true);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _savingProgress = false);
-      AppAlert.error(context, cleanError(e));
-    }
   }
 
   Future<void> _delete() async {
@@ -283,43 +253,33 @@ class _MetaDetalheScreenState extends State<MetaDetalheScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ButtonDefault(
-                    text: 'Atualizar progresso',
-                    width: ButtonWidth.full,
-                    size: ButtonSize.lg,
-                    isLoading: _savingProgress,
-                    onPressed: (_deleting || _savingProgress)
-                        ? null
-                        : _updateProgress,
-                  ),
-                  const SizedBox(height: 12),
                   Row(
-                children: [
-                  Expanded(
-                    child: ButtonDefault(
-                      text: 'Excluir',
-                      variant: ButtonVariant.secondary,
-                      size: ButtonSize.lg,
-                      prefixIcon: const Icon(
-                        LucideIcons.trash2,
-                        size: 18,
-                        color: AppColors.danger,
+                    children: [
+                      Expanded(
+                        child: ButtonDefault(
+                          text: 'Excluir',
+                          variant: ButtonVariant.secondary,
+                          size: ButtonSize.lg,
+                          prefixIcon: const Icon(
+                            LucideIcons.trash2,
+                            size: 18,
+                            color: AppColors.danger,
+                          ),
+                          isLoading: _deleting,
+                          onPressed: _deleting ? null : _delete,
+                        ),
                       ),
-                      isLoading: _deleting,
-                      onPressed: _deleting ? null : _delete,
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ButtonDefault(
+                          text: 'Editar',
+                          size: ButtonSize.lg,
+                          prefixIcon: const Icon(LucideIcons.pencil, size: 18),
+                          onPressed: _deleting ? null : _edit,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ButtonDefault(
-                      text: 'Editar',
-                      size: ButtonSize.lg,
-                      prefixIcon: const Icon(LucideIcons.pencil, size: 18),
-                      onPressed: _deleting ? null : _edit,
-                    ),
-                  ),
-                ],
-              ),
                 ],
               ),
             ),
